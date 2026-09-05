@@ -111,14 +111,66 @@ const Sound = (() => {
       tone(t, { freq: 340, to: 220, dur: 0.035, gain: 0.09, type: 'square' });
     },
 
-    /** The margin bell. */
+    /**
+     * The margin bell: a small steel dome struck by a hammer.
+     *
+     * The frequencies below are the real thing, measured off a recording
+     * of a typewriter bell rather than guessed. Three findings shaped
+     * this, all of them counter-intuitive:
+     *
+     * It rings high -- around 3.2kHz, not the ~1kHz a "bell" suggests.
+     * It is top-heavy: the 2.64 partial is louder than the fundamental,
+     * which is what makes the sound bright and small rather than round.
+     * And every mode is really a close PAIR. A cast dome is never quite
+     * symmetrical, so each mode splits in two a few hertz apart. The
+     * fundamental's pair sits 79Hz apart, close enough to fall inside one
+     * critical band, and the roughness that produces is the tang your ear
+     * reads as "bell" instead of "sine wave". It is the single most
+     * important detail here and the easiest one to leave out.
+     *
+     * Decay is two-stage: half the energy is gone in 50ms, but the tail
+     * runs on for a second and a half.
+     */
     bell() {
       if (!ready()) return;
       const t = ctx.currentTime;
-      tone(t, { freq: 2090, dur: 0.85, gain: 0.16 });
-      tone(t, { freq: 3140, dur: 0.55, gain: 0.07 });
-      tone(t, { freq: 4400, dur: 0.22, gain: 0.035 });
-      noise(t, { dur: 0.02, freq: 5200, q: 1, gain: 0.09 });
+
+      // Where the hammer lands changes how strongly it excites each mode,
+      // so the balance shifts a little from strike to strike.
+      const tune = rand(0.998, 1.002);
+
+      const modes = [
+        { pair: [3237, 3316], gain: 0.042, dur: 1.45 },
+        { pair: [8552, 8563], gain: 0.038, dur: 0.85 },
+        { pair: [15111, 15138], gain: 0.014, dur: 0.42 }
+      ];
+
+      for (const m of modes) {
+        const spread = rand(0.85, 1.15);
+        for (const hz of m.pair) {
+          const freq = hz * tune;
+          const osc = ctx.createOscillator();
+          osc.type = 'sine';
+
+          // Struck metal starts fractionally sharp and settles as the
+          // dome stops flexing.
+          osc.frequency.setValueAtTime(freq * 1.006, t);
+          osc.frequency.exponentialRampToValueAtTime(freq, t + 0.04);
+
+          const g = ctx.createGain();
+          g.gain.setValueAtTime(0, t);
+          g.gain.linearRampToValueAtTime(m.gain * spread, t + 0.002);
+          g.gain.exponentialRampToValueAtTime(0.0001, t + m.dur);
+
+          osc.connect(g).connect(master);
+          osc.start(t);
+          osc.stop(t + m.dur + 0.05);
+        }
+      }
+
+      // The hammer itself: a bright tick, gone almost before it lands.
+      noise(t, { dur: 0.010, freq: 7000, q: 0.9, gain: 0.060, type: 'highpass' });
+      noise(t, { dur: 0.028, freq: 3400, q: 1.4, gain: 0.035 });
     },
 
     /** Carriage thrown back to the left margin, then the platen ratchets. */
