@@ -33,7 +33,10 @@ Then open http://localhost:4173/. No build step, no dependencies.
   margin unless the margin release is held.
 - **Ribbon and correction tape.** Black, red, and a correcting ribbon that
   lifts a character back off the page.
-- **Sound**, synthesised with the Web Audio API — no audio files.
+- **Sound**, synthesised with the Web Audio API — no audio files. A key is
+  two sounds, not one: the strike, then the key returning to its rest. A
+  carriage return is three — the crossing, the slam at the margin stop,
+  and the platen ratcheting the line on after a beat of quiet.
 
 ## Pages
 

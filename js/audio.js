@@ -86,13 +86,45 @@ const Sound = (() => {
 
     unlock() { ready(); },
 
-    /** Typebar strikes the paper. */
+    /**
+     * Typebar strikes the paper.
+     *
+     * Measuring a real one was a corrective: better than half its energy
+     * sits above 3.5kHz and under a tenth below 200Hz. The earlier
+     * version had it backwards, leading on a low thump, which is why it
+     * sounded like a door closing rather than a key being hit. The body
+     * resonance is real but quiet -- around 105 to 190Hz -- and the
+     * clack itself is bright broadband noise. Gone to a tenth in 55ms
+     * and effectively silent by 160ms.
+     */
     strike() {
       if (!ready()) return;
       const t = ctx.currentTime;
-      noise(t, { dur: 0.035, freq: rand(2600, 3600), q: 1.1, gain: 0.30 });
-      noise(t + 0.004, { dur: 0.05, freq: rand(900, 1300), q: 0.8, gain: 0.16 });
-      tone(t, { freq: rand(150, 190), to: 70, dur: 0.05, gain: 0.16, type: 'triangle' });
+
+      // The clack: where the sound actually lives.
+      noise(t, { dur: 0.05, freq: 5200, q: 0.7, gain: 0.28, type: 'highpass' });
+      noise(t, { dur: 0.022, freq: rand(7000, 9500), q: 0.8, gain: 0.15 });
+      noise(t + 0.003, { dur: 0.045, freq: rand(2200, 2900), q: 0.9, gain: 0.085 });
+
+      // The machine's mass, kept deliberately in its place.
+      tone(t, { freq: rand(120, 175), to: 65, dur: 0.055, gain: 0.10, type: 'triangle' });
+
+      // The tail that carries it out past 100ms.
+      noise(t + 0.01, { dur: 0.15, freq: 4200, q: 0.5, gain: 0.04, type: 'highpass' });
+    },
+
+    /**
+     * The key coming back up. A real keyboard is two sounds per stroke,
+     * not one: the strike, then the key returning to its rest a moment
+     * later. Quieter, lower and looser than the strike, and in three
+     * small parts rather than one clean hit.
+     */
+    keyUp() {
+      if (!ready()) return;
+      const t = ctx.currentTime;
+      noise(t, { dur: 0.02, freq: rand(3000, 4200), q: 1.2, gain: 0.075 });
+      noise(t + 0.012, { dur: 0.032, freq: rand(400, 700), q: 0.9, gain: 0.060 });
+      noise(t + 0.085, { dur: 0.045, freq: rand(1200, 1800), q: 1.0, gain: 0.040 });
     },
 
     /** Space bar: same mechanism, no typebar, so it is duller. */
@@ -173,16 +205,64 @@ const Sound = (() => {
       noise(t, { dur: 0.028, freq: 3400, q: 1.4, gain: 0.035 });
     },
 
-    /** Carriage thrown back to the left margin, then the platen ratchets. */
+    /**
+     * Carriage thrown back to the left margin.
+     *
+     * This is three events, not one, which is what the old version got
+     * wrong by firing everything at once. The carriage crosses first --
+     * a rush that swells as it picks up speed, the escapement ratcheting
+     * as it goes. It slams into the margin stop, brightly and briefly.
+     * Then, after a clear beat of near silence, the platen ratchets the
+     * paper on a line. That gap is most of the character: without it the
+     * return is a noise, and with it it is a mechanism.
+     *
+     * Timed to land the slam as the paper arrives on screen.
+     */
     carriageReturn() {
       if (!ready()) return;
       const t = ctx.currentTime;
-      noise(t, { dur: 0.20, freq: 1500, q: 0.45, gain: 0.22 });
-      for (let i = 0; i < 9; i++) {
-        noise(t + 0.012 * i, { dur: 0.018, freq: 3000 - i * 90, q: 3, gain: 0.07 });
+      const travel = 0.30;              // carriage crossing time
+      const feed = travel + 0.17;       // platen ratchets the line on
+
+      // The crossing: looped noise opening up as the carriage gathers pace.
+      const rush = ctx.createBufferSource();
+      rush.buffer = noiseBuffer;
+      rush.loop = true;
+      rush.playbackRate.value = 0.85;
+
+      const band = ctx.createBiquadFilter();
+      band.type = 'bandpass';
+      band.frequency.setValueAtTime(900, t);
+      band.frequency.exponentialRampToValueAtTime(2800, t + travel);
+      band.Q.value = 0.4;
+
+      const swell = ctx.createGain();
+      swell.gain.setValueAtTime(0.0001, t);
+      swell.gain.exponentialRampToValueAtTime(0.085, t + travel * 0.6);
+      swell.gain.exponentialRampToValueAtTime(0.065, t + travel);
+      swell.gain.exponentialRampToValueAtTime(0.0001, t + travel + 0.05);
+
+      rush.connect(band).connect(swell).connect(master);
+      rush.start(t);
+      rush.stop(t + travel + 0.09);
+
+      // The escapement counting off as it crosses.
+      for (let i = 0; i < 7; i++) {
+        noise(t + travel * (0.10 + 0.125 * i),
+              { dur: 0.013, freq: 2500 + i * 190, q: 3, gain: 0.030 + i * 0.004 });
       }
-      noise(t + 0.19, { dur: 0.09, freq: 320, q: 0.8, gain: 0.26 });
-      tone(t + 0.19, { freq: 210, to: 90, dur: 0.10, gain: 0.14, type: 'triangle' });
+
+      // Arrival at the margin stop.
+      noise(t + travel, { dur: 0.06, freq: 5000, q: 0.6, gain: 0.30, type: 'highpass' });
+      noise(t + travel, { dur: 0.10, freq: rand(1500, 2200), q: 0.8, gain: 0.13 });
+      tone(t + travel, { freq: 190, to: 70, dur: 0.10, gain: 0.12, type: 'triangle' });
+      noise(t + travel + 0.02, { dur: 0.14, freq: 3800, q: 0.5, gain: 0.045, type: 'highpass' });
+
+      // A beat of quiet, then the paper goes up a line.
+      for (let i = 0; i < 4; i++) {
+        noise(feed + i * 0.016, { dur: 0.02, freq: 2400 - i * 120, q: 2.6, gain: 0.050 });
+      }
+      noise(feed, { dur: 0.07, freq: 700, q: 0.9, gain: 0.045 });
     },
 
     /** Platen knob turning one line. */

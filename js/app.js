@@ -327,7 +327,7 @@
     state.marginRelease = false;
     syncKeyLatches();
     Sound.carriageReturn();
-    updateView(420, 'cubic-bezier(.16,.9,.25,1)');
+    updateView(360, 'cubic-bezier(.4,.05,.25,1)');
 
     if (state.line >= PAGE.lines - 4) {
       say('Near the bottom of the page — NEW PAGE winds in a fresh one.');
@@ -870,7 +870,10 @@
   });
 
   window.addEventListener('keyup', (e) => {
-    if (e.key === 'Shift') state.shiftHeld = false;
+    if (e.key === 'Shift') { state.shiftHeld = false; return; }
+    if (e.metaKey || e.ctrlKey || e.altKey) return;
+    if (!state.touched || state.feeding || overlayOpen()) return;
+    if (e.key.length === 1 || e.key === 'Enter' || e.key === 'Backspace') Sound.keyUp();
   });
 
   window.addEventListener('blur', () => { state.shiftHeld = false; });
@@ -921,6 +924,8 @@
   document.addEventListener('mousedown', (e) => {
     if (!e.target.closest('.menu-wrap')) closeExportMenu();
   });
+
+  keyboardEl.addEventListener('mouseup', () => { if (state.touched) Sound.keyUp(); });
 
   $('confirmCancel').addEventListener('click', closeConfirm);
   $('confirmProceed').addEventListener('click', () => {
