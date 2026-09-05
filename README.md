@@ -10,7 +10,9 @@ out of letting strikes stack in one column.
 
 [CLICK HERE!](https://swoloszynski.github.io/typewriter/)
 
-## Run it
+<img width="1700" height="718" alt="typed-page-2026-09-05-1944" src="https://github.com/user-attachments/assets/eb10c471-d4ae-4b05-ae16-e8d529ebf713" />
+
+## Run it locally
 
 ```bash
 python3 -m http.server 4173
