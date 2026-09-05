@@ -6,6 +6,10 @@ key stamps ink onto the sheet at that exact spot. Overprinting is the whole
 medium — accents, bold, exclamation marks and blacked-out mistakes all fall
 out of letting strikes stack in one column.
 
+## Hosted online via GH pages
+
+[CLICK HERE!](https://swoloszynski.github.io/typewriter/)
+
 ## Run it
 
 ```bash
