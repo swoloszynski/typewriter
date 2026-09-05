@@ -1,0 +1,610 @@
+/* ------------------------------------------------------------------ *
+ * Typewriter Simulator
+ * Layout is three stacked bands: toolbar, stage (the sheet of paper),
+ * machine (platen + keyboard). The sheet is a transformed element that
+ * slides under a fixed type guide, so the paper moves and the machine
+ * does not -- same as the real thing.
+ * ------------------------------------------------------------------ */
+
+:root {
+  --desk:        #221f1b;
+  --desk-lit:    #2e2a24;
+  --paper:       #f2eee1;
+  --paper-edge:  #d8d2c0;
+  --ink:         #23211e;
+  --ink-red:     #b5322e;
+  --metal:       #3b4147;
+  --metal-hi:    #545c64;
+  --metal-lo:    #23272b;
+  --key:         #eae5da;
+  --key-dark:    #2c3136;
+  --accent:      #f2a08a;
+  --accent-dim:  #c9705c;
+  --text:        #efe9dc;
+  --text-dim:    #9d968a;
+
+  --ch-w:   10px;      /* 10 characters per inch at 100dpi */
+  --line-h: 16.6667px; /* 6 lines per inch                 */
+}
+
+* { box-sizing: border-box; }
+
+html, body {
+  height: 100%;
+  margin: 0;
+  overflow: hidden;
+  background: var(--desk);
+  color: var(--text);
+  font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+#app {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+/* ---------------------------------------------------------- toolbar */
+
+.toolbar {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 0 14px;
+  height: 46px;
+  background: linear-gradient(#332e28, #272320);
+  border-bottom: 1px solid #16130f;
+  box-shadow: 0 2px 10px rgba(0,0,0,.45);
+  z-index: 40;
+}
+
+.toolbar-spacer { flex: 1 1 auto; }
+
+.brand { display: flex; align-items: center; gap: 9px; }
+
+.brand-mark {
+  display: grid;
+  place-items: center;
+  width: 24px; height: 24px;
+  background: var(--accent);
+  color: #2b1c17;
+  font: 700 11px/1 "Courier New", monospace;
+  letter-spacing: .5px;
+  border-radius: 2px;
+}
+
+.brand-name {
+  font: 600 12px/1 "Helvetica Neue", sans-serif;
+  letter-spacing: .16em;
+  text-transform: uppercase;
+  color: var(--text);
+}
+
+.readout {
+  display: flex;
+  gap: 14px;
+  font: 400 11px/1 "Courier New", monospace;
+  letter-spacing: .1em;
+  color: var(--text-dim);
+  white-space: nowrap;
+}
+
+.readout b { color: var(--text); font-weight: 700; }
+
+.readout .ribbon { display: flex; align-items: center; gap: 6px; }
+
+.swatch {
+  width: 9px; height: 9px;
+  border-radius: 50%;
+  background: #d9d4c8;
+  box-shadow: inset 0 0 0 1px rgba(0,0,0,.4);
+}
+
+.tools { display: flex; gap: 6px; }
+
+.tbtn {
+  appearance: none;
+  border: 1px solid #4a443c;
+  background: #38332c;
+  color: var(--text-dim);
+  font: 600 10px/1 "Helvetica Neue", sans-serif;
+  letter-spacing: .12em;
+  padding: 7px 10px;
+  border-radius: 3px;
+  cursor: pointer;
+  transition: background .12s, color .12s, border-color .12s;
+}
+
+.tbtn:hover { background: #464037; color: var(--text); }
+
+.tbtn[aria-pressed="false"] { opacity: .45; }
+
+.tbtn-accent {
+  border-color: var(--accent-dim);
+  color: var(--accent);
+  min-width: 32px;
+}
+
+/* ------------------------------------------------------------ stage */
+
+.stage {
+  position: relative;
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: hidden;
+  background:
+    radial-gradient(120% 90% at 50% 0%, var(--desk-lit) 0%, var(--desk) 70%);
+  cursor: crosshair;
+}
+
+.stage-vignette {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 20;
+  background:
+    linear-gradient(to bottom, rgba(0,0,0,.55) 0%, rgba(0,0,0,0) 18%),
+    linear-gradient(to top,    rgba(0,0,0,.75) 0%, rgba(0,0,0,0) 14%);
+}
+
+.paper-wrap {
+  position: absolute;
+  z-index: 2;
+  top: 0; left: 0;
+  transform-origin: 0 0;
+  will-change: transform;
+}
+
+.paper {
+  position: relative;
+  width: 850px;
+  height: 1100px;
+  background: var(--paper);
+  box-shadow:
+    0 0 0 1px var(--paper-edge),
+    0 18px 46px rgba(0,0,0,.55),
+    inset 0 0 90px rgba(148,134,102,.14);
+}
+
+/* Faint fibre texture, drawn with a repeating gradient so there are no
+   image assets to load. */
+.paper-grain {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: .5;
+  background-image:
+    repeating-linear-gradient(0deg,   rgba(120,105,75,.045) 0 1px, transparent 1px 3px),
+    repeating-linear-gradient(90deg,  rgba(120,105,75,.035) 0 1px, transparent 1px 4px);
+}
+
+.ink {
+  position: absolute;
+  inset: 0;
+  font-family: "Courier New", "Nimbus Mono PS", Courier, monospace;
+  font-size: 16.6667px;
+}
+
+/* One stamped character. */
+.ch {
+  position: absolute;
+  width: var(--ch-w);
+  height: var(--line-h);
+  line-height: var(--line-h);
+  text-align: left;
+  white-space: pre;
+  transform-origin: 50% 55%;
+  text-shadow: 0 0 .45px currentColor;
+  pointer-events: none;
+}
+
+.ch.fresh { animation: stamp .13s ease-out; }
+
+@keyframes stamp {
+  from { opacity: 0; transform: var(--tf) scale(1.5); }
+  to   { opacity: var(--a); }
+}
+
+/* The carriage. It carries the paper, so it slides horizontally by the
+   same amount and is thrown back to the right on a carriage return. The
+   knobs on its ends are the only part far enough out to watch travel. */
+.carriage {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  height: 54px;
+  z-index: 24;
+  display: flex;
+  align-items: flex-start;
+  transform-origin: 0 0;
+  will-change: transform;
+  pointer-events: none;
+}
+
+.carriage.hidden,
+.paper-table.hidden { opacity: 0; }
+
+.carriage-body {
+  flex: 1 1 auto;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+}
+
+.carriage .platen {
+  height: 32px;
+  border-radius: 16px 16px 0 0;
+  background: linear-gradient(#565d64 0%, #3d444a 38%, #23282d 72%, #14171a 100%);
+  box-shadow:
+    inset 0 2px 0 rgba(255,255,255,.14),
+    inset 0 -6px 12px rgba(0,0,0,.55),
+    0 -3px 14px rgba(0,0,0,.5);
+}
+
+.carriage .knob {
+  flex: 0 0 auto;
+  width: 40px; height: 40px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 34% 28%, #757d85, #363d43 58%, #171a1d);
+  box-shadow: 0 4px 12px rgba(0,0,0,.6), inset 0 0 0 5px rgba(0,0,0,.16);
+}
+
+.carriage .knob {
+  margin-top: -5px;
+}
+
+.carriage .knob.left  { margin-right: -10px; }
+.carriage .knob.right { margin-left: -10px; }
+
+/* The carriage scale: one tick per column, read against the fixed
+   pointer on the type guide. It travels, so it doubles as a ruler. */
+.carriage .scale {
+  position: relative;
+  height: 16px;
+  background: linear-gradient(#d3d8dc 0%, #aeb5bb 55%, #838b92 100%);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.5), 0 2px 6px rgba(0,0,0,.5);
+}
+
+.scale i {
+  position: absolute;
+  top: 0;
+  width: 1px;
+  height: 4px;
+  background: rgba(24,28,32,.5);
+}
+
+.scale i.major { height: 7px; background: rgba(24,28,32,.75); }
+
+.scale b {
+  position: absolute;
+  top: 6px;
+  transform: translateX(-50%);
+  font: 700 7.5px/1 "Helvetica Neue", sans-serif;
+  color: #2b3136;
+}
+
+/* The paper bail, hinged to the carriage in front of the sheet. */
+.carriage .bail {
+  position: absolute;
+  left: 0; right: 0;
+  top: -170px;
+  height: 4px;
+  border-radius: 3px;
+  background: linear-gradient(#98a0a8, #4c545b 60%, #2c3237);
+  box-shadow: 0 2px 6px rgba(0,0,0,.45);
+}
+
+.carriage .bail i {
+  position: absolute;
+  top: -4px;
+  width: 26px;
+  height: 13px;
+  border-radius: 7px;
+  background: linear-gradient(#3b3f43, #1a1d20);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.14);
+}
+
+.carriage .bail i:first-child { left: 24%; }
+.carriage .bail i:last-child  { left: 62%; }
+
+/* The plate the sheet leans back against, behind the paper. */
+.paper-table {
+  position: absolute;
+  left: 0; right: 0; bottom: 0;
+  height: 400px;
+  z-index: 1;
+  border-radius: 10px 10px 0 0;
+  background:
+    linear-gradient(#1a1e22 0%, #232930 26%, #313840 68%, #262c31 100%);
+  border-top: 1px solid rgba(255,255,255,.07);
+  box-shadow: inset 0 40px 70px rgba(0,0,0,.5);
+  transition: opacity .3s;
+}
+
+/* The fixed point the paper slides beneath. */
+.type-guide {
+  position: absolute;
+  z-index: 26;
+  pointer-events: none;
+  transform: translate(-50%, -50%);
+}
+
+.guide-bracket {
+  position: relative;
+  width: 22px;
+  height: 30px;
+  margin: 0 auto;
+  border: 2px solid rgba(226,220,204,.5);
+  border-top: none;
+  border-radius: 0 0 3px 3px;
+  box-shadow: 0 2px 6px rgba(0,0,0,.5);
+}
+
+.guide-bracket::after {
+  content: "";
+  position: absolute;
+  left: 50%; bottom: -8px;
+  width: 2px; height: 6px;
+  background: var(--accent);
+  transform: translateX(-50%);
+}
+
+/* The inked ribbon, stretched between its spools in front of the platen. */
+.ribbon-deck {
+  position: absolute;
+  left: 50%;
+  top: 34px;
+  width: 190px;
+  height: 13px;
+  transform: translateX(-50%);
+  display: flex;
+  flex-direction: column;
+  border-radius: 2px;
+  overflow: hidden;
+  box-shadow: inset 0 0 8px rgba(0,0,0,.6), 0 1px 4px rgba(0,0,0,.5);
+  transition: transform .18s ease, opacity .18s ease;
+}
+
+.ribbon-half { flex: 1 1 0; }
+.ribbon-half.black { background: linear-gradient(#3c3934, #17160f); }
+.ribbon-half.red   { background: linear-gradient(#c8463f, #8e211d); }
+
+/* Raise the strip so the red half sits in front of the typebars. */
+.ribbon-deck.on-red  { transform: translateX(-50%) translateY(-5.5px); }
+.ribbon-deck.on-corr { opacity: .2; }
+
+/* The typebar that swings up and whacks the ribbon. */
+.typebar {
+  position: absolute;
+  left: 50%;
+  bottom: -14px;
+  width: 5px;
+  height: 84px;
+  margin-left: -2.5px;
+  border-radius: 2px 2px 1px 1px;
+  background: linear-gradient(#8d949b, #4e565d 40%, #2b3035);
+  transform-origin: 50% 100%;
+  transform: translateY(78px);
+  opacity: 0;
+}
+
+.typebar.strike { animation: swing .11s ease-out; }
+
+@keyframes swing {
+  0%   { opacity: 0; transform: translateY(78px); }
+  35%  { opacity: 1; transform: translateY(0); }
+  100% { opacity: 0; transform: translateY(74px); }
+}
+
+.hint {
+  position: absolute;
+  left: 50%; top: 26px;
+  transform: translateX(-50%);
+  margin: 0;
+  z-index: 30;
+  font: 400 12px/1 "Courier New", monospace;
+  letter-spacing: .22em;
+  text-transform: uppercase;
+  color: var(--text-dim);
+  transition: opacity .5s;
+  pointer-events: none;
+  text-align: center;
+}
+
+.hint.gone { opacity: 0; }
+.hint.warn { color: var(--accent); }
+
+/* ---------------------------------------------------------- machine */
+
+.machine {
+  flex: 0 0 auto;
+  position: relative;
+  z-index: 30;
+  padding: 6px 0 8px;
+  background: linear-gradient(#2b3036 0%, #23282d 30%, #1b1f23 100%);
+  border-top: 1px solid #101316;
+  box-shadow: 0 -12px 30px rgba(0,0,0,.55);
+}
+
+/* --------------------------------------------------------- keyboard */
+
+.keyboard {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 5px;
+  padding: 14px 12px 10px;
+}
+
+.krow { display: flex; gap: 5px; }
+
+.key {
+  --kw: 34px;
+  position: relative;
+  width: var(--kw);
+  height: 34px;
+  flex: 0 0 auto;
+  border: none;
+  border-radius: 50%;
+  background:
+    radial-gradient(circle at 50% 28%, #fbf8f1, var(--key) 55%, #c5bfb2);
+  color: #221f1b;
+  font-family: "Courier New", monospace;
+  cursor: pointer;
+  box-shadow:
+    0 3px 0 #8e887b,
+    0 5px 9px rgba(0,0,0,.45),
+    inset 0 0 0 2px rgba(255,255,255,.55);
+  transition: transform .05s, box-shadow .05s;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  user-select: none;
+}
+
+.key .base {
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.key .shifted {
+  position: absolute;
+  top: 4px;
+  font-size: 8.5px;
+  line-height: 1;
+  opacity: .62;
+}
+
+.key.two .base { transform: translateY(4px); }
+
+.key.wide  { --kw: 52px; border-radius: 17px; }
+.key.space { --kw: 300px; height: 26px; border-radius: 13px; }
+
+.key.fn {
+  background: linear-gradient(#3f464d, #2a3036);
+  color: #cfd6dc;
+  box-shadow:
+    0 3px 0 #15191d,
+    0 5px 9px rgba(0,0,0,.45),
+    inset 0 0 0 1px rgba(255,255,255,.09);
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: .08em;
+  line-height: 1.25;
+  text-align: center;
+}
+
+.key.fn .sub { display: block; font-size: 7.5px; opacity: .55; letter-spacing: .04em; }
+
+.key.dead { background: radial-gradient(circle at 50% 28%, #fff6ee, #f0dfd2 55%, #cbb2a2); }
+
+.key.active,
+.key:active {
+  transform: translateY(3px);
+  box-shadow: 0 0 0 #8e887b, 0 1px 3px rgba(0,0,0,.5),
+              inset 0 0 0 2px rgba(255,255,255,.4);
+}
+
+.key.fn.active,
+.key.fn:active { box-shadow: 0 0 0 #15191d, 0 1px 3px rgba(0,0,0,.5); }
+
+.key.latched {
+  background: linear-gradient(#6a4b42, #4a3129);
+  color: var(--accent);
+}
+
+.legend {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 4px 16px;
+  padding: 2px 16px 2px;
+  font: 400 10px/1.6 "Helvetica Neue", sans-serif;
+  color: #6f7780;
+  letter-spacing: .04em;
+}
+
+.legend kbd {
+  font: 600 9.5px/1 "Courier New", monospace;
+  color: #aab2ba;
+  background: #2b3137;
+  border: 1px solid #3c444b;
+  border-radius: 3px;
+  padding: 2px 4px;
+}
+
+.legend-strict label { display: flex; align-items: center; gap: 5px; cursor: pointer; }
+.legend-strict input { accent-color: var(--accent-dim); margin: 0; }
+
+/* ------------------------------------------------------------- help */
+
+.help {
+  position: absolute;
+  top: 46px; right: 0; bottom: 0;
+  width: 380px;
+  max-width: 90vw;
+  z-index: 50;
+  overflow-y: auto;
+  padding: 26px 30px 60px;
+  background: #262220;
+  border-left: 1px solid #12100e;
+  box-shadow: -14px 0 40px rgba(0,0,0,.5);
+  font-size: 13.5px;
+  line-height: 1.62;
+  color: #cdc5b7;
+  animation: slide-in .22s ease-out;
+}
+
+@keyframes slide-in { from { transform: translateX(24px); opacity: 0; } }
+
+.help h2 {
+  margin: 0 0 14px;
+  font: 600 12px/1 "Helvetica Neue", sans-serif;
+  letter-spacing: .18em;
+  text-transform: uppercase;
+  color: var(--accent);
+}
+
+.help h3 {
+  margin: 22px 0 5px;
+  font-size: 13px;
+  font-weight: 700;
+  color: #f0eade;
+}
+
+.help p { margin: 0; }
+.help b { color: #f0eade; }
+
+.help .k,
+.help kbd {
+  font: 600 11.5px/1 "Courier New", monospace;
+  color: #f0eade;
+  background: #34302c;
+  border: 1px solid #443f39;
+  border-radius: 3px;
+  padding: 1px 4px;
+}
+
+.help-close {
+  position: absolute;
+  top: 14px; right: 16px;
+  border: none;
+  background: none;
+  color: #7d766c;
+  font-size: 24px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.help-close:hover { color: var(--text); }
+
+/* ------------------------------------------------------- small view */
+
+@media (max-height: 720px) {
+  .key { height: 30px; --kw: 30px; }
+  .key.space { --kw: 250px; }
+  .legend { display: none; }
+}

@@ -1,0 +1,153 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Typewriter Simulator</title>
+<link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+
+<div id="app">
+
+  <header class="toolbar">
+    <div class="brand">
+      <span class="brand-mark">TW</span>
+      <span class="brand-name">Typewriter Simulator</span>
+    </div>
+    <div class="toolbar-spacer"></div>
+    <div class="readout" id="readout">
+      <span class="readout-item">LINE <b id="roLine">1</b></span>
+      <span class="readout-item">COL <b id="roCol">1</b></span>
+      <span class="readout-item ribbon" id="roRibbon"><i class="swatch"></i><b>BLACK</b></span>
+    </div>
+    <div class="toolbar-spacer"></div>
+    <nav class="tools">
+      <button class="tbtn" data-act="zoom"   title="Zoom out / in (Esc)">ZOOM</button>
+      <button class="tbtn" data-act="ribbon" title="Change ribbon (F1)">RIBBON</button>
+      <button class="tbtn" data-act="sound"  title="Toggle sound" aria-pressed="true">SOUND</button>
+      <button class="tbtn" data-act="png"    title="Save this page as a PNG image">PNG</button>
+      <button class="tbtn" data-act="pdf"    title="Save this page as a printable PDF">PDF</button>
+      <button class="tbtn" data-act="new"    title="Roll in a fresh sheet">NEW&nbsp;SHEET</button>
+      <button class="tbtn tbtn-accent" data-act="help" title="How this thing works">?</button>
+    </nav>
+  </header>
+
+  <main class="stage" id="stage">
+    <div class="stage-vignette"></div>
+
+    <!-- The paper table: the plate the sheet leans back against. -->
+    <div class="paper-table" id="paperTable"></div>
+
+    <div class="paper-wrap" id="paperWrap">
+      <div class="paper" id="paper">
+        <div class="paper-grain"></div>
+        <div class="ink" id="ink"></div>
+      </div>
+    </div>
+
+    <!-- The carriage: platen roller and its knobs. It holds the paper, so
+         it slides left with every character and is thrown back on return. -->
+    <div class="carriage" id="carriage">
+      <div class="knob left"></div>
+      <div class="carriage-body">
+        <!-- The bail holds the sheet flat against the roller. -->
+        <div class="bail"><i></i><i></i></div>
+        <div class="platen"></div>
+        <div class="scale" id="scale"></div>
+      </div>
+      <div class="knob right"></div>
+    </div>
+
+    <!-- The ribbon and type guide belong to the frame and never move. -->
+    <div class="type-guide" id="typeGuide">
+      <div class="ribbon-deck" id="ribbonStrip">
+        <span class="ribbon-half black"></span>
+        <span class="ribbon-half red"></span>
+      </div>
+      <div class="guide-bracket"></div>
+      <div class="typebar" id="typebar"></div>
+    </div>
+
+    <p class="hint" id="hint">Just start typing.</p>
+  </main>
+
+  <section class="machine">
+    <div class="keyboard" id="keyboard"></div>
+
+    <div class="legend">
+      <span><kbd>Return</kbd> carriage return</span>
+      <span><kbd>Backspace</kbd> carriage back &mdash; it does not erase</span>
+      <span><kbd>Tab</kbd> tab stop</span>
+      <span><kbd>Esc</kbd> zoom</span>
+      <span><kbd>F1</kbd> ribbon</span>
+      <span><kbd>F2</kbd> correction tape</span>
+      <span><kbd>F3</kbd> half space</span>
+      <span><kbd>F4</kbd> margin release</span>
+      <span class="legend-strict">
+        <label><input type="checkbox" id="strictToggle" checked> Period-correct keyboard</label>
+      </span>
+    </div>
+  </section>
+
+  <aside class="help" id="help" hidden>
+    <button class="help-close" data-act="help" aria-label="Close">&times;</button>
+    <h2>Working the machine</h2>
+
+    <p>There is no cursor and no undo. The carriage sits where it sits, and every key
+    you hit stamps ink onto the sheet at that exact spot. Everything below follows
+    from that one fact.</p>
+
+    <h3>There is no <span class="k">1</span> and no <span class="k">0</span></h3>
+    <p>Typebars were expensive. Use a capital <b>I</b> for one and a capital <b>O</b>
+    for zero &mdash; that is what typists actually did.</p>
+
+    <h3>There is no <span class="k">!</span> either</h3>
+    <p>Build one: type an apostrophe, press <kbd>Backspace</kbd>, then type a period.
+    Two strikes, one column, one exclamation mark.</p>
+
+    <h3>Underlining and bold</h3>
+    <p>Type a word, <kbd>Backspace</kbd> over it, then hold the underscore to draw a
+    rule beneath it. For bold, strike the same letter twice with a
+    <kbd>Backspace</kbd> in between &mdash; the second impression sits a hair off the
+    first and the letter thickens.</p>
+
+    <h3>Accents</h3>
+    <p>The four keys <span class="k">&#180;</span> <span class="k">&#96;</span>
+    <span class="k">&#168;</span> <span class="k">&#184;</span> are <i>dead keys</i>:
+    they print without moving the carriage, so the next letter lands underneath the
+    mark. Click them on the keyboard below, or press <kbd>&#96;</kbd> and
+    <kbd>~</kbd>.</p>
+
+    <h3>Fixing mistakes</h3>
+    <p>Three options, all of them period-correct: strike over the error with
+    <b>x</b>&nbsp;x&nbsp;x, back up and overprint the right letter, or switch on the
+    correction tape (<kbd>F2</kbd>) and retype the wrong character to lift it off the
+    page. The half-space key (<kbd>F3</kbd>) squeezes a replacement word into a gap
+    that is a letter too wide.</p>
+
+    <h3>The bell</h3>
+    <p>It rings eight columns before the right margin. That is your cue to finish the
+    word and throw the carriage. Past the margin the keys lock &mdash; hold the margin
+    release (<kbd>F4</kbd>) if you really mean it.</p>
+
+    <h3>Moving around</h3>
+    <p>Click anywhere on the sheet to walk the carriage there. Arrow keys nudge it one
+    column or roll the platen one line.</p>
+
+    <h3>Typewriter art</h3>
+    <p>Every character is exactly one column wide and the platen rolls in exact line
+    steps, so the sheet is really a 85&times;66 grid. Overprinting <b>M</b>,
+    <b>&#64;</b> and <b>&#37;</b> gives you dense blacks; periods and apostrophes give
+    you greys. That is the whole medium.</p>
+  </aside>
+
+</div>
+
+<script src="js/layout.js"></script>
+<script src="js/audio.js"></script>
+<script src="js/pdf.js"></script>
+<script src="js/paper.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>
