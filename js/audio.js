@@ -101,16 +101,22 @@ const Sound = (() => {
       if (!ready()) return;
       const t = ctx.currentTime;
 
-      // The clack: where the sound actually lives.
-      noise(t, { dur: 0.05, freq: 5200, q: 0.7, gain: 0.28, type: 'highpass' });
-      noise(t, { dur: 0.022, freq: rand(7000, 9500), q: 0.8, gain: 0.15 });
-      noise(t + 0.003, { dur: 0.045, freq: rand(2200, 2900), q: 0.9, gain: 0.085 });
+      // Broad body of the clack. Centred lower than a literal reading of
+      // the spectrum suggests: the measured energy up at 8kHz is spread
+      // broadband across a real recording, and reproducing that level
+      // with resonant filters concentrates it into a hiss. Matching the
+      // numbers is not the same as matching the sound.
+      noise(t, { dur: 0.05, freq: rand(1900, 2500), q: 0.5, gain: 0.26 });
+      noise(t + 0.003, { dur: 0.045, freq: rand(750, 1100), q: 0.8, gain: 0.12 });
 
-      // The machine's mass, kept deliberately in its place.
-      tone(t, { freq: rand(120, 175), to: 65, dur: 0.055, gain: 0.10, type: 'triangle' });
+      // Enough top to keep the edge on it, well short of a tick.
+      noise(t, { dur: 0.028, freq: rand(4200, 5200), q: 0.7, gain: 0.095 });
+
+      // The machine's mass.
+      tone(t, { freq: rand(115, 165), to: 62, dur: 0.06, gain: 0.13, type: 'triangle' });
 
       // The tail that carries it out past 100ms.
-      noise(t + 0.01, { dur: 0.15, freq: 4200, q: 0.5, gain: 0.04, type: 'highpass' });
+      noise(t + 0.01, { dur: 0.14, freq: 2600, q: 0.5, gain: 0.035 });
     },
 
     /**
