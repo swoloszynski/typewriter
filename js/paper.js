@@ -167,6 +167,52 @@ class Sheet {
 
   isEmpty() { return this.strikes.length === 0; }
 
+  /* ------------------------------------------------------ persistence */
+
+  /**
+   * A compact form for storage. Strikes become plain arrays rather than
+   * objects -- a full page is a few thousand of them, and the field names
+   * would otherwise be most of the file.
+   *
+   * The jitter has to be stored, not regenerated. It is what makes this
+   * page this page; rolling fresh numbers on load would give back the
+   * same words on visibly different paper.
+   */
+  toJSON() {
+    return {
+      col: this.col,
+      line: this.line,
+      bell: this.bellRung,
+      s: this.strikes.map((k) => [
+        k.ch,
+        +k.col.toFixed(1),
+        k.line,
+        k.color === INK.red ? 1 : 0,
+        +k.jx.toFixed(2),
+        +k.jy.toFixed(2),
+        +k.rot.toFixed(2),
+        +k.alpha.toFixed(3)
+      ])
+    };
+  }
+
+  /** Put stored strikes back on the page, without re-animating them. */
+  restore(rows) {
+    const frag = document.createDocumentFragment();
+    for (const r of rows) {
+      if (!Array.isArray(r) || typeof r[0] !== 'string') continue;
+      const s = {
+        ch: r[0], col: +r[1] || 0, line: +r[2] || 0,
+        color: r[3] === 1 ? INK.red : INK.black,
+        jx: +r[4] || 0, jy: +r[5] || 0, rot: +r[6] || 0,
+        alpha: typeof r[7] === 'number' ? r[7] : 1
+      };
+      this.strikes.push(s);
+      frag.appendChild(this._render(s, false));
+    }
+    this.el.appendChild(frag);
+  }
+
   /**
    * The sheet as plain text.
    *

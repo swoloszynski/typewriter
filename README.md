@@ -43,6 +43,21 @@ All three exports live under the **EXPORT** button. A PNG is a picture of
 one sheet, so it saves the page you are looking at. The PDF and the text
 are the document, so they take every page.
 
+## Refreshing
+
+The document survives a reload. It is written to `localStorage` a few
+hundred milliseconds after you stop typing, and on load it comes back
+whole: every page, the page you were on, the carriage position on each,
+the ribbon colour, and the ink.
+
+The per-strike jitter is stored rather than regenerated. It is what makes
+a page *that* page; fresh random numbers on load would hand back the same
+words on visibly different paper.
+
+Storage is per-origin, so pages typed on `localhost` do not follow you to
+a deployed copy. **START OVER** clears the saved document as well as the
+screen; nothing is written to a server.
+
 ## Exporting
 
 **PNG** flattens the sheet to a 2x bitmap — the paper colour, the texture,

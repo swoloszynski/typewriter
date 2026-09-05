@@ -169,6 +169,8 @@
 
     $('roLine').textContent = state.line + 1;
     $('roCol').textContent = Math.round(state.col) + 1;
+
+    scheduleSave();
   }
 
   /* ------------------------------------------------------------ hint */
@@ -389,6 +391,7 @@
     ribbonEl.classList.toggle('on-corr', state.ribbon === 'correction');
     const ro = $('roRibbon');
     ro.querySelector('b').textContent = state.ribbon.toUpperCase();
+    scheduleSave();
     ro.querySelector('.swatch').style.background =
       state.ribbon === 'red' ? INK.red :
       state.ribbon === 'correction' ? '#ffffff' : INK.black;
@@ -569,6 +572,74 @@
      most markdown editors turn "---" into on paste. */
   function documentText() {
     return doc.sheets.map((s) => s.toText()).filter(Boolean).join('\n\n---\n\n');
+  }
+
+  /* ----------------------------------------------------- persistence */
+
+  const STORE_KEY = 'typewriter.document.v1';
+  let saveTimer = null;
+
+  /* Saving hangs off updateView, which runs on every keystroke, so it is
+     debounced -- serialising a long document once per character would be
+     felt in the typing. */
+  function scheduleSave() {
+    if (!sheet) return;
+    clearTimeout(saveTimer);
+    saveTimer = setTimeout(saveDocument, 400);
+  }
+
+  function saveDocument() {
+    if (!sheet) return;
+    saveCarriage();
+    try {
+      if (documentEmpty() && doc.sheets.length === 1) {
+        localStorage.removeItem(STORE_KEY);
+        return;
+      }
+      localStorage.setItem(STORE_KEY, JSON.stringify({
+        v: 1,
+        index: doc.index,
+        ribbon: state.ribbon,
+        strict: state.strict,
+        pages: doc.sheets.map((s) => s.toJSON())
+      }));
+    } catch (err) {
+      // Storage can be full, or refused outright in a private window.
+      // A missing backup is not worth interrupting someone's typing.
+    }
+  }
+
+  /** @returns true if a document was found and put back in the machine. */
+  function loadDocument() {
+    let data = null;
+    try {
+      data = JSON.parse(localStorage.getItem(STORE_KEY) || 'null');
+    } catch (err) {
+      return false;
+    }
+    if (!data || data.v !== 1 || !Array.isArray(data.pages) || !data.pages.length) {
+      return false;
+    }
+
+    try {
+      doc.sheets = data.pages.map((p) => {
+        const s = new Sheet();
+        if (typeof p.col === 'number') s.col = p.col;
+        if (typeof p.line === 'number') s.line = p.line;
+        s.bellRung = !!p.bell;
+        s.restore(Array.isArray(p.s) ? p.s : []);
+        return s;
+      });
+      setCurrent(Math.max(0, Math.min(data.index | 0, doc.sheets.length - 1)));
+      if (RIBBONS.includes(data.ribbon)) state.ribbon = data.ribbon;
+      if (typeof data.strict === 'boolean') state.strict = data.strict;
+      return true;
+    } catch (err) {
+      // Anything unreadable is treated as no document at all rather than
+      // half-restored onto the page.
+      doc.sheets = [];
+      return false;
+    }
   }
 
   /* ---------------------------------------------------- export menu */
@@ -870,6 +941,7 @@
 
   $('strictToggle').addEventListener('change', (e) => {
     state.strict = e.target.checked;
+    scheduleSave();
     say(state.strict
       ? 'Period-correct keyboard: no 1, no 0, no exclamation mark.'
       : 'Cheating enabled — every key on your keyboard prints.');
@@ -880,12 +952,28 @@
   /* ----------------------------------------------------------- start */
 
   buildKeyboard();
+
+  const restored = loadDocument();
+  if (!doc.sheets.length) {
+    doc.sheets = [new Sheet()];
+    setCurrent(0);
+  }
+
+  mount();
+  loadCarriage();
+  renderStack();
   applyRibbon();
   syncKeyLatches();
-
-  doc.sheets = [new Sheet()];
-  setCurrent(0);
-  mount();
-  renderStack();
+  $('strictToggle').checked = state.strict;
   updateView(0);
+
+  if (restored) {
+    const n = doc.sheets.length;
+    say(n > 1
+      ? `Picked up where you left off — ${n} pages.`
+      : 'Picked up where you left off.');
+  }
+
+  // A refresh mid-keystroke should not lose the last few characters.
+  window.addEventListener('beforeunload', saveDocument);
 })();
