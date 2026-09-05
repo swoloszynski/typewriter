@@ -57,16 +57,34 @@ const PRINTABLE = (() => {
   return set;
 })();
 
-/* Hints shown when someone reaches for a key the machine does not have. */
-const MISSING_KEY_HINTS = {
-  '1': 'No 1 on this machine — type a capital I.',
-  '0': 'No 0 on this machine — type a capital O.',
-  '!': "No ! key — type ' then Backspace then a period.",
-  '+': 'No + key — overprint a hyphen and a slash.',
-  '=': 'No = key — overprint a hyphen and an underscore.',
-  '*': 'No * key — overprint x and a hyphen.'
+/* What to say when someone reaches for a key the machine does not have,
+   and which keys to light up on the keyboard instead. The substitutions
+   are the ones typists actually used. */
+const MISSING_KEYS = {
+  '1': { say: 'There is no 1 on this machine.',
+         use: 'Typebars cost money. Use a capital I — everyone did.',
+         keys: ['I'] },
+  '0': { say: 'There is no 0 on this machine.',
+         use: 'Use a capital O for zero.',
+         keys: ['O'] },
+  '!': { say: 'There is no exclamation mark.',
+         use: "Build one: apostrophe, Backspace, then a period.",
+         keys: ["'", '.'] },
+  '+': { say: 'There is no plus sign.',
+         use: 'Overprint a hyphen and a slash.',
+         keys: ['-', '/'] },
+  '=': { say: 'There is no equals sign.',
+         use: 'Overprint a hyphen and an underscore.',
+         keys: ['-', '_'] },
+  '*': { say: 'There is no asterisk.',
+         use: 'Overprint an x and a hyphen.',
+         keys: ['x', '-'] }
 };
 
-function hintForMissingKey(ch) {
-  return MISSING_KEY_HINTS[ch] || 'This machine has no "' + ch + '" key.';
+function missingKeyInfo(ch) {
+  return MISSING_KEYS[ch] || {
+    say: 'This machine has no "' + ch + '" key.',
+    use: 'Everything it can print is on the keyboard below.',
+    keys: []
+  };
 }

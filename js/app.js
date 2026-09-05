@@ -24,6 +24,7 @@
   const carriageEl= $('carriage');
   const tableEl   = $('paperTable');
   const helpEl    = $('help');
+  const alertEl   = $('keyAlert');
 
   const sheet = new Sheet(inkEl);
 
@@ -144,6 +145,50 @@
     hintTimer = setTimeout(() => hintEl.classList.add('gone'), 2600);
   }
 
+  /* ----------------------------------------------- missing-key alert */
+
+  let alertTimer = null;
+
+  function showKeyAlert(ch) {
+    const info = missingKeyInfo(ch);
+    $('kaChar').textContent = ch;
+    $('kaTitle').textContent = info.say;
+    $('kaUse').textContent = info.use;
+
+    hintEl.classList.add('gone');
+    alertEl.hidden = false;
+    alertEl.classList.remove('shake', 'out');
+    void alertEl.offsetWidth;              // restart the animation
+    alertEl.classList.add('shake');
+
+    clearSuggestions();
+    info.keys.forEach(suggestKey);
+
+    clearTimeout(alertTimer);
+    alertTimer = setTimeout(dismissKeyAlert, 4200);
+  }
+
+  function dismissKeyAlert() {
+    if (alertEl.hidden) return;
+    clearTimeout(alertTimer);
+    clearSuggestions();
+    alertEl.classList.add('out');
+    setTimeout(() => {
+      alertEl.hidden = true;
+      alertEl.classList.remove('out', 'shake');
+    }, 300);
+  }
+
+  function suggestKey(ch) {
+    for (const el of keyEls) {
+      if (el.dataset.b === ch || el.dataset.s === ch) { el.classList.add('suggest'); return; }
+    }
+  }
+
+  function clearSuggestions() {
+    for (const el of keyEls) el.classList.remove('suggest');
+  }
+
   function firstTouch() {
     if (state.touched) return;
     state.touched = true;
@@ -182,6 +227,7 @@
   /** Print one character at the carriage position. */
   function type(ch) {
     firstTouch();
+    dismissKeyAlert();
 
     if (ch === ' ') {
       if (atRightMargin()) return marginLock();
@@ -509,7 +555,7 @@
     } else {
       firstTouch();
       Sound.jam();
-      say(hintForMissingKey(ch), true);
+      showKeyAlert(ch);
     }
   });
 
