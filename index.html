@@ -28,6 +28,7 @@
       <button class="tbtn" data-act="sound"  title="Toggle sound" aria-pressed="true">SOUND</button>
       <button class="tbtn" data-act="png"    title="Save this page as a PNG image">PNG</button>
       <button class="tbtn" data-act="pdf"    title="Save this page as a printable PDF">PDF</button>
+      <button class="tbtn" data-act="text"   title="Read this page back as plain text">TEXT</button>
       <button class="tbtn" data-act="new"    title="Roll in a fresh sheet">NEW&nbsp;SHEET</button>
       <button class="tbtn tbtn-accent" data-act="help" title="How this thing works">?</button>
     </nav>
@@ -98,6 +99,25 @@
       </span>
     </div>
   </section>
+
+  <div class="modal" id="textModal" hidden>
+    <div class="modal-card">
+      <button class="modal-close" data-act="text" aria-label="Close">&times;</button>
+      <h2>This sheet as text</h2>
+      <p class="modal-note">
+        Overprints are read back as the character they make, not as the strikes
+        they were built from: an apostrophe over a period comes back as an
+        exclamation mark, a dead-key accent composes with the letter under it,
+        and an underline leaves its letter alone. Anything else resolves to the
+        topmost impression. The left margin is dropped; indentation is kept.
+      </p>
+      <pre class="text-out" id="textOut"></pre>
+      <div class="modal-actions">
+        <button class="tbtn tbtn-accent" id="copyText">COPY</button>
+        <button class="tbtn" id="downloadText">DOWNLOAD .TXT</button>
+      </div>
+    </div>
+  </div>
 
   <aside class="help" id="help" hidden>
     <button class="help-close" data-act="help" aria-label="Close">&times;</button>

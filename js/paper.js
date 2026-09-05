@@ -37,6 +37,64 @@ const MARGIN = {
 
 const INK = { black: '#23211e', red: '#b5322e' };
 
+/* What each dead key leaves on the page, and the combining mark it stands
+   for. Overprinting an accent onto a letter is how the machine makes an
+   accented character; composing them is how we read it back. */
+const COMBINING = {
+  '\u00b4': '\u0301',   // acute
+  '`':       '\u0300',   // grave
+  '\u00a8': '\u0308',   // diaeresis
+  '\u00b8': '\u0327'    // cedilla
+};
+
+/* Overprints where two strikes unambiguously mean one character.
+   Deliberately short. Hyphen-over-underscore would give an equals sign,
+   but it is also just what underlining a hyphen looks like, and typists
+   underlined far more often than they faked an equals sign. */
+const OVERPRINTS = [
+  { of: ["'", '.'], gives: '!' },
+  { of: ['-', '/'], gives: '+' }
+];
+
+/**
+ * Read one cell of the page back as a single character.
+ *
+ * The page holds impressions, not characters, so a cell may have several
+ * stacked in it. Taking the topmost is the right fallback but the wrong
+ * default: it would turn the machine's own tricks back into the raw
+ * strikes they were built from, and hand back a period where the sheet
+ * plainly reads "!".
+ */
+function flattenCell(chars) {
+  if (chars.length === 1) return chars[0];
+
+  const unique = [...new Set(chars)];
+
+  // Struck twice to embolden it. Still one letter.
+  if (unique.length === 1) return unique[0];
+
+  // A dead-key accent over the letter beneath it.
+  const accents = chars.filter(c => COMBINING[c]);
+  if (accents.length) {
+    const base = chars.filter(c => !COMBINING[c]).pop();
+    if (base) {
+      const composed = (base + accents.map(a => COMBINING[a]).join('')).normalize('NFC');
+      if ([...composed].length === 1) return composed;
+    }
+  }
+
+  for (const o of OVERPRINTS) {
+    if (unique.length === o.of.length && o.of.every(c => unique.includes(c))) return o.gives;
+  }
+
+  // Underlining does not change the letter it sits under.
+  const inked = chars.filter(c => c !== '_');
+  if (inked.length && inked.length < chars.length) return inked[inked.length - 1];
+
+  // Anything else: the last impression is the one sitting on top.
+  return chars[chars.length - 1];
+}
+
 class Sheet {
   constructor(inkEl) {
     this.el = inkEl;
@@ -106,6 +164,44 @@ class Sheet {
   }
 
   isEmpty() { return this.strikes.length === 0; }
+
+  /**
+   * The sheet as plain text.
+   *
+   * Columns are shifted so the left margin becomes column zero -- the
+   * one-inch margin is a property of the paper, not of the writing, and
+   * ten leading spaces on every line is not what anyone wants to paste
+   * into a document. Relative indentation is kept.
+   */
+  toText() {
+    if (!this.strikes.length) return '';
+
+    const cells = new Map();
+    let minCol = Infinity, maxCol = -Infinity;
+    let minLine = Infinity, maxLine = -Infinity;
+
+    for (const s of this.strikes) {
+      const col = Math.round(s.col);
+      const key = s.line + ',' + col;
+      if (!cells.has(key)) cells.set(key, []);
+      cells.get(key).push(s.ch);
+      if (col < minCol) minCol = col;
+      if (col > maxCol) maxCol = col;
+      if (s.line < minLine) minLine = s.line;
+      if (s.line > maxLine) maxLine = s.line;
+    }
+
+    const lines = [];
+    for (let line = minLine; line <= maxLine; line++) {
+      let out = '';
+      for (let col = minCol; col <= maxCol; col++) {
+        const chars = cells.get(line + ',' + col);
+        out += chars ? flattenCell(chars) : ' ';
+      }
+      lines.push(out.replace(/\s+$/, ''));
+    }
+    return lines.join('\n');
+  }
 
   /** A printable PDF: real Courier text at true US Letter size. */
   toPDF() {

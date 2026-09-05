@@ -25,6 +25,7 @@
   const tableEl   = $('paperTable');
   const helpEl    = $('help');
   const alertEl   = $('keyAlert');
+  const textModal = $('textModal');
 
   const sheet = new Sheet(inkEl);
 
@@ -419,6 +420,51 @@
 
   function toggleHelp() {
     helpEl.hidden = !helpEl.hidden;
+    if (!helpEl.hidden) textModal.hidden = true;
+  }
+
+  function toggleText() {
+    textModal.hidden = !textModal.hidden;
+    if (textModal.hidden) return;
+    helpEl.hidden = true;
+    const text = sheet.toText();
+    const out = $('textOut');
+    out.textContent = text || 'Nothing typed on this sheet yet.';
+    out.classList.toggle('empty', !text);
+  }
+
+  function flashButton(btn, label) {
+    const was = btn.textContent;
+    btn.textContent = label;
+    setTimeout(() => { btn.textContent = was; }, 1400);
+  }
+
+  async function copyText() {
+    const text = sheet.toText();
+    if (!text) return;
+    try {
+      await navigator.clipboard.writeText(text);
+    } catch (err) {
+      // Some browsers refuse the async clipboard API outside a tight
+      // gesture; the old selection trick still works everywhere.
+      const ta = document.createElement('textarea');
+      ta.value = text;
+      ta.style.position = 'fixed';
+      ta.style.opacity = '0';
+      document.body.appendChild(ta);
+      ta.select();
+      document.execCommand('copy');
+      ta.remove();
+    }
+    flashButton($('copyText'), 'COPIED');
+  }
+
+  function downloadTextFile() {
+    const text = sheet.toText();
+    if (!text) return;
+    download(new Blob([text], { type: 'text/plain;charset=utf-8' }),
+             `typed-page-${stamp()}.txt`);
+    flashButton($('downloadText'), 'SAVED');
   }
 
   /* -------------------------------------------------------- keyboard */
@@ -517,10 +563,23 @@
 
   /* ----------------------------------------------------- key handling */
 
+  const overlayOpen = () => !helpEl.hidden || !textModal.hidden;
+
   window.addEventListener('keydown', (e) => {
     if (e.metaKey || e.ctrlKey || e.altKey) return;
 
     const k = e.key;
+
+    // With a panel up, the keyboard belongs to the panel -- otherwise
+    // reading the text export types it onto the sheet behind it.
+    if (overlayOpen()) {
+      if (k === 'Escape') {
+        e.preventDefault();
+        helpEl.hidden = true;
+        textModal.hidden = true;
+      }
+      return;
+    }
 
     switch (k) {
       case 'Shift':     state.shiftHeld = true; return;
@@ -595,6 +654,7 @@
         case 'pdf':    savePDF(); break;
         case 'new':    newSheet(); break;
         case 'help':   toggleHelp(); break;
+        case 'text':   toggleText(); break;
         case 'sound':
           state.sound = !state.sound;
           Sound.enabled = state.sound;
@@ -602,6 +662,13 @@
           break;
       }
     });
+  });
+
+  $('copyText').addEventListener('click', copyText);
+  $('downloadText').addEventListener('click', downloadTextFile);
+
+  textModal.addEventListener('mousedown', (e) => {
+    if (e.target === textModal) textModal.hidden = true;
   });
 
   $('strictToggle').addEventListener('change', (e) => {
