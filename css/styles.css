@@ -710,9 +710,30 @@ html, body {
 
 .modal-actions {
   display: flex;
+  align-items: center;
   gap: 8px;
   justify-content: flex-end;
 }
+
+.modal-spacer { flex: 1 1 auto; }
+
+.modal-card-narrow { width: min(540px, 100%); }
+
+.modal-body {
+  margin: 0 0 20px;
+  font: 400 13.5px/1.6 "Helvetica Neue", Helvetica, sans-serif;
+  color: #cdc5b7;
+}
+
+.modal-body b { color: #f0eade; }
+
+.tbtn-danger {
+  border-color: #85433b;
+  background: #61302a;
+  color: #f6cec2;
+}
+
+.tbtn-danger:hover { background: #74392f; color: #fff; }
 
 .modal-close {
   position: absolute;

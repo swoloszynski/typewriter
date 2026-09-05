@@ -26,6 +26,7 @@
   const helpEl    = $('help');
   const alertEl   = $('keyAlert');
   const textModal = $('textModal');
+  const confirmEl = $('confirmModal');
 
   const sheet = new Sheet(inkEl);
 
@@ -43,7 +44,8 @@
     sound: true,
     strict: true,
     bellRung: false,
-    touched: false
+    touched: false,
+    feeding: false        // a sheet is being rolled in; the keys are dead
   };
 
   /* The carriage scale, one tick per column. Positions are percentages
@@ -370,8 +372,49 @@
       : 'Margin release off.');
   }
 
+  /* --------------------------------------------------- confirmations */
+
+  /* One dialog, reused. There is no undo on a typewriter and none here
+     either, so anything that destroys a sheet asks first -- and offers to
+     save it on the way out, since wanting the page kept is the whole
+     reason someone hesitates. */
+  let pendingAction = null;
+
+  function askConfirm({ title, body, proceedLabel, onProceed }) {
+    pendingAction = onProceed;
+    $('confirmTitle').textContent = title;
+    $('confirmBody').innerHTML = body;
+    $('confirmProceed').textContent = proceedLabel;
+    helpEl.hidden = true;
+    textModal.hidden = true;
+    confirmEl.hidden = false;
+  }
+
+  function closeConfirm() {
+    confirmEl.hidden = true;
+    pendingAction = null;
+  }
+
+  function requestReset() {
+    if (sheet.isEmpty()) return newSheet();   // nothing to lose
+    askConfirm({
+      title: 'Reset this sheet?',
+      body: 'This rolls in a blank sheet. Everything typed on this one goes ' +
+            'with it &mdash; <b>there is no undo</b>, here or on the real ' +
+            'machine. Save it first if you want to keep it.',
+      proceedLabel: 'RESET SHEET',
+      onProceed: newSheet
+    });
+  }
+
   function newSheet() {
+    if (state.feeding) return;
     firstTouch();
+
+    // The sheet is not actually cleared until the roll-out finishes, so
+    // the keys have to be dead until then or anything typed during the
+    // animation is silently swallowed by the clear.
+    state.feeding = true;
     wrap.style.transition = 'transform .45s ease-in, opacity .45s ease-in';
     wrap.style.transform += ' translateY(-140px)';
     wrap.style.opacity = '0';
@@ -386,6 +429,7 @@
       wrap.style.opacity = '1';
       updateView(0);
       requestAnimationFrame(() => updateView(320, 'cubic-bezier(.2,.9,.3,1)'));
+      state.feeding = false;
     }, 450);
   }
 
@@ -563,7 +607,7 @@
 
   /* ----------------------------------------------------- key handling */
 
-  const overlayOpen = () => !helpEl.hidden || !textModal.hidden;
+  const overlayOpen = () => !helpEl.hidden || !textModal.hidden || !confirmEl.hidden;
 
   window.addEventListener('keydown', (e) => {
     if (e.metaKey || e.ctrlKey || e.altKey) return;
@@ -572,11 +616,14 @@
 
     // With a panel up, the keyboard belongs to the panel -- otherwise
     // reading the text export types it onto the sheet behind it.
+    if (state.feeding) { e.preventDefault(); return; }
+
     if (overlayOpen()) {
       if (k === 'Escape') {
         e.preventDefault();
         helpEl.hidden = true;
         textModal.hidden = true;
+        closeConfirm();
       }
       return;
     }
@@ -652,7 +699,7 @@
         case 'ribbon': cycleRibbon(); break;
         case 'png':    savePNG(); break;
         case 'pdf':    savePDF(); break;
-        case 'new':    newSheet(); break;
+        case 'reset':  requestReset(); break;
         case 'help':   toggleHelp(); break;
         case 'text':   toggleText(); break;
         case 'sound':
@@ -663,6 +710,16 @@
       }
     });
   });
+
+  $('confirmCancel').addEventListener('click', closeConfirm);
+  $('confirmProceed').addEventListener('click', () => {
+    const go = pendingAction;
+    closeConfirm();
+    if (go) go();
+  });
+  $('confirmPng').addEventListener('click', (e) => { savePNG(); flashButton(e.target, 'SAVED'); });
+  $('confirmPdf').addEventListener('click', (e) => { savePDF(); flashButton(e.target, 'SAVED'); });
+  confirmEl.addEventListener('mousedown', (e) => { if (e.target === confirmEl) closeConfirm(); });
 
   $('copyText').addEventListener('click', copyText);
   $('downloadText').addEventListener('click', downloadTextFile);
