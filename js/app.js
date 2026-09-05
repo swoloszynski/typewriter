@@ -15,7 +15,6 @@
   const stage     = $('stage');
   const wrap      = $('paperWrap');
   const paper     = $('paper');
-  const inkEl     = $('ink');
   const guide     = $('typeGuide');
   const typebar   = $('typebar');
   const hintEl    = $('hint');
@@ -28,7 +27,40 @@
   const textModal = $('textModal');
   const confirmEl = $('confirmModal');
 
-  const sheet = new Sheet(inkEl);
+  /* The document is a pile of sheets. `sheet` always points at the one in
+     the machine, so everything that types onto paper is untouched by
+     there being more than one. */
+  const doc = { sheets: [], index: 0 };
+  let sheet = null;
+
+  function setCurrent(i) {
+    doc.index = i;
+    sheet = doc.sheets[i];
+  }
+
+  /** Put the current sheet's ink layer into the platen. */
+  function mount() {
+    const previous = paper.querySelector('.ink');
+    if (previous) previous.remove();
+    paper.appendChild(sheet.el);
+  }
+
+  /* The carriage belongs to the page, not the machine: come back to a
+     page and you come back to where you stopped writing on it. */
+  function saveCarriage() {
+    if (!sheet) return;
+    sheet.col = state.col;
+    sheet.line = state.line;
+    sheet.bellRung = state.bellRung;
+  }
+
+  function loadCarriage() {
+    state.col = sheet.col;
+    state.line = sheet.line;
+    state.bellRung = sheet.bellRung;
+  }
+
+  const documentEmpty = () => doc.sheets.every((s) => s.isEmpty());
 
   const TYPE_SCALE = 1.8;
   const TAB_STOP   = 5;
@@ -76,6 +108,7 @@
     height: '2px',
     background: 'rgba(201,112,92,.85)',
     pointerEvents: 'none',
+    zIndex: '3',
     transition: 'left .07s linear, top .12s ease'
   });
   paper.appendChild(caret);
@@ -293,7 +326,9 @@
     Sound.carriageReturn();
     updateView(420, 'cubic-bezier(.16,.9,.25,1)');
 
-    if (state.line >= PAGE.lines - 4) say('You are running off the bottom of the sheet.');
+    if (state.line >= PAGE.lines - 4) {
+      say('Near the bottom of the page — NEW PAGE winds in a fresh one.');
+    }
   }
 
   function rollPlaten(dir) {
@@ -395,42 +430,100 @@
     pendingAction = null;
   }
 
-  function requestReset() {
-    if (sheet.isEmpty()) return newSheet();   // nothing to lose
+  function requestStartOver() {
+    if (documentEmpty()) return;              // nothing to throw away
+    const n = doc.sheets.length;
     askConfirm({
-      title: 'Reset this sheet?',
-      body: 'This rolls in a blank sheet. Everything typed on this one goes ' +
-            'with it &mdash; <b>there is no undo</b>, here or on the real ' +
-            'machine. Save it first if you want to keep it.',
-      proceedLabel: 'RESET SHEET',
-      onProceed: newSheet
+      title: n > 1 ? `Throw away all ${n} pages?` : 'Throw this page away?',
+      body: (n > 1
+              ? `Every one of the ${n} pages goes, not just this one. `
+              : 'Everything typed on it goes with it. ') +
+            '<b>There is no undo</b>, here or on the real machine. Save the ' +
+            'document first if you want to keep it.',
+      proceedLabel: 'START OVER',
+      onProceed: () => rollSheet(() => {
+        doc.sheets = [new Sheet()];
+        setCurrent(0);
+        mount();
+        loadCarriage();
+        renderStack();
+      })
     });
   }
 
-  function newSheet() {
+  /** Keep this page and wind a fresh one in behind it. */
+  function addPage() {
+    rollSheet(() => {
+      saveCarriage();
+      doc.sheets.push(new Sheet());
+      setCurrent(doc.sheets.length - 1);
+      mount();
+      loadCarriage();
+      renderStack();
+    });
+  }
+
+  function switchTo(i) {
+    if (i === doc.index || state.feeding) return;
+    saveCarriage();
+    setCurrent(i);
+    mount();
+    loadCarriage();
+    renderStack();
+    Sound.platen();
+    updateView(260, 'cubic-bezier(.2,.9,.3,1)');
+  }
+
+  /** Roll the sheet out of the machine, change the document, wind it in. */
+  function rollSheet(mutate) {
     if (state.feeding) return;
     firstTouch();
 
-    // The sheet is not actually cleared until the roll-out finishes, so
-    // the keys have to be dead until then or anything typed during the
-    // animation is silently swallowed by the clear.
+    // The document is not changed until the roll-out finishes, so the
+    // keys have to be dead until then or anything typed in the meantime
+    // lands on a page that is on its way out.
     state.feeding = true;
     wrap.style.transition = 'transform .45s ease-in, opacity .45s ease-in';
     wrap.style.transform += ' translateY(-140px)';
     wrap.style.opacity = '0';
     Sound.feed();
+
     setTimeout(() => {
-      sheet.clear();
-      paper.appendChild(caret);
-      state.col = MARGIN.left;
-      state.line = MARGIN.top;
-      state.bellRung = false;
+      mutate();
       wrap.style.transition = 'none';
       wrap.style.opacity = '1';
       updateView(0);
       requestAnimationFrame(() => updateView(320, 'cubic-bezier(.2,.9,.3,1)'));
       state.feeding = false;
     }, 450);
+  }
+
+  /** The pile of pages beside the machine. */
+  function renderStack() {
+    const stack = $('pageStack');
+    stack.hidden = doc.sheets.length < 2;
+    stack.textContent = '';
+
+    doc.sheets.forEach((s, i) => {
+      const btn = document.createElement('button');
+      btn.className = 'page-thumb' + (i === doc.index ? ' current' : '');
+      btn.title = 'Page ' + (i + 1);
+      btn.appendChild(s.toCanvas(0.3));
+
+      const no = document.createElement('span');
+      no.className = 'page-no';
+      no.textContent = i + 1;
+      btn.appendChild(no);
+
+      btn.addEventListener('click', () => switchTo(i));
+      stack.appendChild(btn);
+    });
+
+    const ro = $('roPage');
+    ro.hidden = doc.sheets.length < 2;
+    const nums = ro.querySelectorAll('b');
+    nums[0].textContent = doc.index + 1;
+    nums[1].textContent = doc.sheets.length;
   }
 
   function download(blob, name) {
@@ -448,18 +541,32 @@
     return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}-${p(d.getHours())}${p(d.getMinutes())}`;
   }
 
+  /* A PNG is a picture of one sheet, so it saves the page you are looking
+     at. A PDF and the text are the document, so they take everything. */
   function savePNG() {
-    if (sheet.isEmpty()) return say('Nothing typed on this sheet yet.');
+    if (sheet.isEmpty()) return say('Nothing typed on this page yet.');
     sheet.toCanvas(2).toBlob((blob) => {
       download(blob, `typed-page-${stamp()}.png`);
     }, 'image/png');
-    say('Saved as a PNG.');
+    say(doc.sheets.length > 1
+      ? `Saved page ${doc.index + 1} as a PNG.`
+      : 'Saved as a PNG.');
   }
 
   function savePDF() {
-    if (sheet.isEmpty()) return say('Nothing typed on this sheet yet.');
-    download(sheet.toPDF(), `typed-page-${stamp()}.pdf`);
-    say('Saved as a PDF — US Letter, ready to print.');
+    if (documentEmpty()) return say('Nothing typed yet.');
+    const n = doc.sheets.length;
+    download(PDFExport.build(doc.sheets.map((s) => s.strikes)),
+             `typed-${n > 1 ? 'document' : 'page'}-${stamp()}.pdf`);
+    say(n > 1
+      ? `Saved all ${n} pages as a PDF — US Letter, ready to print.`
+      : 'Saved as a PDF — US Letter, ready to print.');
+  }
+
+  /* Pages are divided by a horizontal rule, which is also what Notion and
+     most markdown editors turn "---" into on paste. */
+  function documentText() {
+    return doc.sheets.map((s) => s.toText()).filter(Boolean).join('\n\n---\n\n');
   }
 
   function toggleHelp() {
@@ -471,9 +578,9 @@
     textModal.hidden = !textModal.hidden;
     if (textModal.hidden) return;
     helpEl.hidden = true;
-    const text = sheet.toText();
+    const text = documentText();
     const out = $('textOut');
-    out.textContent = text || 'Nothing typed on this sheet yet.';
+    out.textContent = text || 'Nothing typed yet.';
     out.classList.toggle('empty', !text);
   }
 
@@ -484,7 +591,7 @@
   }
 
   async function copyText() {
-    const text = sheet.toText();
+    const text = documentText();
     if (!text) return;
     try {
       await navigator.clipboard.writeText(text);
@@ -504,10 +611,10 @@
   }
 
   function downloadTextFile() {
-    const text = sheet.toText();
+    const text = documentText();
     if (!text) return;
     download(new Blob([text], { type: 'text/plain;charset=utf-8' }),
-             `typed-page-${stamp()}.txt`);
+             `typed-${doc.sheets.length > 1 ? 'document' : 'page'}-${stamp()}.txt`);
     flashButton($('downloadText'), 'SAVED');
   }
 
@@ -699,7 +806,8 @@
         case 'ribbon': cycleRibbon(); break;
         case 'png':    savePNG(); break;
         case 'pdf':    savePDF(); break;
-        case 'reset':  requestReset(); break;
+        case 'new':    addPage(); break;
+        case 'over':   requestStartOver(); break;
         case 'help':   toggleHelp(); break;
         case 'text':   toggleText(); break;
         case 'sound':
@@ -742,5 +850,10 @@
   buildKeyboard();
   applyRibbon();
   syncKeyLatches();
+
+  doc.sheets = [new Sheet()];
+  setCurrent(0);
+  mount();
+  renderStack();
   updateView(0);
 })();

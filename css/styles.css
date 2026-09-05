@@ -416,6 +416,77 @@ html, body {
 .hint.gone { opacity: 0; }
 .hint.warn { color: var(--accent); }
 
+/* ------------------------------------------------------- page stack */
+
+/* Finished pages, stacked on the desk beside the machine. Click one to
+   roll it back in. */
+.page-stack {
+  position: absolute;
+  left: 14px;
+  top: 14px;
+  bottom: 14px;
+  z-index: 35;
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  padding: 2px;
+  overflow-y: auto;
+  overflow-x: hidden;
+  scrollbar-width: thin;
+}
+
+.page-stack[hidden] { display: none; }
+
+.page-thumb {
+  position: relative;
+  flex: 0 0 auto;
+  width: 60px;
+  height: 78px;
+  padding: 0;
+  border: 1px solid #4a443c;
+  border-radius: 2px;
+  background: var(--paper);
+  cursor: pointer;
+
+  /* Dim with brightness rather than opacity: at 58% opaque the cream
+     paper blends into the dark desk behind it and the page stops looking
+     like paper. Pages waiting on the desk are simply in shadow. */
+  filter: brightness(.62);
+  transition: filter .15s, transform .15s, box-shadow .15s;
+  box-shadow: 0 3px 10px rgba(0,0,0,.5);
+}
+
+.page-thumb:hover { filter: brightness(.85); transform: translateX(3px); }
+
+.page-thumb.current {
+  filter: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px rgba(242,160,138,.4), 0 4px 14px rgba(0,0,0,.55);
+}
+
+.page-thumb canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.page-no {
+  position: absolute;
+  right: -5px;
+  bottom: -6px;
+  min-width: 16px;
+  height: 16px;
+  padding: 0 3px;
+  border-radius: 8px;
+  background: #38332c;
+  color: var(--text-dim);
+  font: 700 9px/16px "Helvetica Neue", sans-serif;
+  text-align: center;
+  box-shadow: 0 1px 3px rgba(0,0,0,.6);
+}
+
+.page-thumb.current .page-no { background: var(--accent); color: #2b1c17; }
+
 /* ------------------------------------------------- missing-key alert */
 
 /* Reaching for a key the machine never had is the most interesting thing

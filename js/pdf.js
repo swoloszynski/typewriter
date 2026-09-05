@@ -92,19 +92,38 @@ const PDFExport = (() => {
   }
 
   /** Assemble the file, tracking byte offsets for the xref table. */
-  function build(strikes) {
-    const content = contentStream(strikes);
+  function build(pages) {
     const w = PAGE.w * PT, h = PAGE.h * PT;
 
-    const objects = [
-      '<< /Type /Catalog /Pages 2 0 R >>',
-      '<< /Type /Pages /Kids [3 0 R] /Count 1 >>',
-      '<< /Type /Page /Parent 2 0 R /MediaBox [0 0 ' + f(w) + ' ' + f(h) + ']' +
-        ' /Resources << /Font << /F1 5 0 R >> >> /Contents 4 0 R >>',
-      '<< /Length ' + content.length + ' >>\nstream\n' + content + '\nendstream',
-      '<< /Type /Font /Subtype /Type1 /BaseFont /Courier' +
-        ' /Encoding /WinAnsiEncoding >>'
-    ];
+    // Objects are numbered by position; `add` returns the number so the
+    // cross-references between them can be written as they are created.
+    const objects = [];
+    const add = (body) => objects.push(body);
+
+    const catalogNum = add('');       // filled in once the kids are known
+    const pagesNum = add('');
+    const fontNum = add(
+      '<< /Type /Font /Subtype /Type1 /BaseFont /Courier /Encoding /WinAnsiEncoding >>'
+    );
+
+    const kids = [];
+    for (const strikes of pages) {
+      const content = contentStream(strikes);
+      const contentNum = add(
+        '<< /Length ' + content.length + ' >>\nstream\n' + content + '\nendstream'
+      );
+      const pageNum = add(
+        '<< /Type /Page /Parent ' + pagesNum + ' 0 R' +
+        ' /MediaBox [0 0 ' + f(w) + ' ' + f(h) + ']' +
+        ' /Resources << /Font << /F1 ' + fontNum + ' 0 R >> >>' +
+        ' /Contents ' + contentNum + ' 0 R >>'
+      );
+      kids.push(pageNum + ' 0 R');
+    }
+
+    objects[catalogNum - 1] = '<< /Type /Catalog /Pages ' + pagesNum + ' 0 R >>';
+    objects[pagesNum - 1] =
+      '<< /Type /Pages /Kids [' + kids.join(' ') + '] /Count ' + pages.length + ' >>';
 
     let file = '%PDF-1.4\n';
     const offsets = [];

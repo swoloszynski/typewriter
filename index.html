@@ -20,6 +20,7 @@
       <span class="readout-item">LINE <b id="roLine">1</b></span>
       <span class="readout-item">COL <b id="roCol">1</b></span>
       <span class="readout-item ribbon" id="roRibbon"><i class="swatch"></i><b>BLACK</b></span>
+      <span class="readout-item" id="roPage" hidden>PAGE <b>1</b>/<b>1</b></span>
     </div>
     <div class="toolbar-spacer"></div>
     <nav class="tools">
@@ -29,7 +30,8 @@
       <button class="tbtn" data-act="png"    title="Save this page as a PNG image">PNG</button>
       <button class="tbtn" data-act="pdf"    title="Save this page as a printable PDF">PDF</button>
       <button class="tbtn" data-act="text"   title="Read this page back as plain text">TEXT</button>
-      <button class="tbtn" data-act="reset"  title="Roll in a blank sheet">RESET&nbsp;SHEET</button>
+      <button class="tbtn" data-act="new"    title="Roll in a fresh page and keep this one">NEW&nbsp;PAGE</button>
+      <button class="tbtn" data-act="over"   title="Throw the whole document away">START&nbsp;OVER</button>
       <button class="tbtn tbtn-accent" data-act="help" title="How this thing works">?</button>
     </nav>
   </header>
@@ -43,7 +45,6 @@
     <div class="paper-wrap" id="paperWrap">
       <div class="paper" id="paper">
         <div class="paper-grain"></div>
-        <div class="ink" id="ink"></div>
       </div>
     </div>
 
@@ -69,6 +70,8 @@
       <div class="guide-bracket"></div>
       <div class="typebar" id="typebar"></div>
     </div>
+
+    <div class="page-stack" id="pageStack" hidden></div>
 
     <p class="hint" id="hint">Just start typing.</p>
 

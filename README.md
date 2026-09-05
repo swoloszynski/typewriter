@@ -31,6 +31,17 @@ Then open http://localhost:4173/. No build step, no dependencies.
   lifts a character back off the page.
 - **Sound**, synthesised with the Web Audio API — no audio files.
 
+## Pages
+
+**NEW PAGE** keeps the sheet you are on and winds a fresh one in behind it.
+Finished pages stack on the desk beside the machine; click one to roll it
+back in, carriage and all — the carriage belongs to the page, so you come
+back to where you stopped writing. **START OVER** throws the whole document
+away, and asks first.
+
+A PNG is a picture of one sheet, so it saves the page you are looking at.
+The PDF and the text are the document, so they take every page.
+
 ## Exporting
 
 **PNG** flattens the sheet to a 2x bitmap — the paper colour, the texture,
@@ -73,4 +84,5 @@ save the page.
 | `js/audio.js` | synthesised strikes, bell, carriage return |
 | `js/paper.js` | the sheet: strike model, rendering, exports |
 | `js/pdf.js` | a hand-written vector PDF writer |
+| `serve.py` | dev server that refuses to let the browser cache |
 | `js/app.js` | the mechanism: carriage, margins, input, view transform |

@@ -96,14 +96,16 @@ function flattenCell(chars) {
 }
 
 class Sheet {
-  constructor(inkEl) {
-    this.el = inkEl;
+  constructor() {
+    this.el = document.createElement('div');
+    this.el.className = 'ink';
     this.strikes = [];
-  }
 
-  clear() {
-    this.strikes = [];
-    this.el.textContent = '';
+    // Where the carriage was left on this page, so returning to it puts
+    // you back where you stopped rather than at the top.
+    this.col = MARGIN.left;
+    this.line = MARGIN.top;
+    this.bellRung = false;
   }
 
   /**
@@ -201,11 +203,6 @@ class Sheet {
       lines.push(out.replace(/\s+$/, ''));
     }
     return lines.join('\n');
-  }
-
-  /** A printable PDF: real Courier text at true US Letter size. */
-  toPDF() {
-    return PDFExport.build(this.strikes);
   }
 
   /** Flatten the sheet to a canvas so it can be saved as a PNG. */
