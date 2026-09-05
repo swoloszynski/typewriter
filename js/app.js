@@ -26,6 +26,7 @@
   const alertEl   = $('keyAlert');
   const textModal = $('textModal');
   const confirmEl = $('confirmModal');
+  const exportMenu= $('exportMenu');
 
   /* The document is a pile of sheets. `sheet` always points at the one in
      the machine, so everything that types onto paper is untouched by
@@ -416,6 +417,7 @@
   let pendingAction = null;
 
   function askConfirm({ title, body, proceedLabel, onProceed }) {
+    closeExportMenu();
     pendingAction = onProceed;
     $('confirmTitle').textContent = title;
     $('confirmBody').innerHTML = body;
@@ -569,12 +571,30 @@
     return doc.sheets.map((s) => s.toText()).filter(Boolean).join('\n\n---\n\n');
   }
 
+  /* ---------------------------------------------------- export menu */
+
+  function toggleExportMenu() {
+    exportMenu.hidden ? openExportMenu() : closeExportMenu();
+  }
+
+  function openExportMenu() {
+    exportMenu.hidden = false;
+    $('exportBtn').setAttribute('aria-expanded', 'true');
+  }
+
+  function closeExportMenu() {
+    if (exportMenu.hidden) return;
+    exportMenu.hidden = true;
+    $('exportBtn').setAttribute('aria-expanded', 'false');
+  }
+
   function toggleHelp() {
     helpEl.hidden = !helpEl.hidden;
     if (!helpEl.hidden) textModal.hidden = true;
   }
 
   function toggleText() {
+    closeExportMenu();
     textModal.hidden = !textModal.hidden;
     if (textModal.hidden) return;
     helpEl.hidden = true;
@@ -723,6 +743,12 @@
 
     // With a panel up, the keyboard belongs to the panel -- otherwise
     // reading the text export types it onto the sheet behind it.
+    if (k === 'Escape' && !exportMenu.hidden) {
+      e.preventDefault();
+      closeExportMenu();
+      return;
+    }
+
     if (state.feeding) { e.preventDefault(); return; }
 
     if (overlayOpen()) {
@@ -802,6 +828,7 @@
   document.querySelectorAll('[data-act]').forEach((btn) => {
     btn.addEventListener('click', () => {
       switch (btn.dataset.act) {
+        case 'export': toggleExportMenu(); break;
         case 'zoom':   toggleZoom(); break;
         case 'ribbon': cycleRibbon(); break;
         case 'png':    savePNG(); break;
@@ -816,7 +843,12 @@
           btn.setAttribute('aria-pressed', String(state.sound));
           break;
       }
+      if (btn.closest('.menu')) closeExportMenu();
     });
+  });
+
+  document.addEventListener('mousedown', (e) => {
+    if (!e.target.closest('.menu-wrap')) closeExportMenu();
   });
 
   $('confirmCancel').addEventListener('click', closeConfirm);

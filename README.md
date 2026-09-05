@@ -39,8 +39,9 @@ back in, carriage and all — the carriage belongs to the page, so you come
 back to where you stopped writing. **START OVER** throws the whole document
 away, and asks first.
 
-A PNG is a picture of one sheet, so it saves the page you are looking at.
-The PDF and the text are the document, so they take every page.
+All three exports live under the **EXPORT** button. A PNG is a picture of
+one sheet, so it saves the page you are looking at. The PDF and the text
+are the document, so they take every page.
 
 ## Exporting
 
@@ -73,8 +74,7 @@ carried as transparency, which is exact over an opaque background.
 | `F4` | margin release |
 | arrows | walk the carriage / roll the platen |
 
-Click anywhere on the sheet to move the carriage there. **PNG** and **PDF**
-save the page.
+Click anywhere on the sheet to move the carriage there.
 
 ## Files
 
