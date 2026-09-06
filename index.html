@@ -35,13 +35,6 @@
           <path class="mute" d="M16.4 9.6l5.2 4.8M21.6 9.6l-5.2 4.8"/>
         </svg>
       </button>
-      <button class="tbtn tbtn-icon" data-act="keyboard" aria-pressed="true"
-              title="Hide the keyboard" aria-label="Keyboard shown">
-        <svg viewBox="0 0 24 24" aria-hidden="true">
-          <rect class="kbd-body" x="2.5" y="6.5" width="19" height="11" rx="1.8"/>
-          <path class="wave" d="M6 10h.01M9.5 10h.01M13 10h.01M16.5 10h.01M6 13h.01M18 13h.01M9 15.5h6"/>
-        </svg>
-      </button>
       <span class="menu-wrap">
         <button class="tbtn" data-act="export" id="exportBtn"
                 aria-haspopup="true" aria-expanded="false">EXPORT&nbsp;&#9662;</button>
@@ -121,6 +114,10 @@
   </main>
 
   <section class="machine">
+    <button class="drawer-pull" data-act="keyboard" aria-pressed="true"
+            title="Put the keyboard away" aria-label="Keyboard shown">
+      <svg viewBox="0 0 24 12" aria-hidden="true"><path d="M4 3.5 12 9l8-5.5"/></svg>
+    </button>
     <div class="keyboard" id="keyboard"></div>
 
   </section>

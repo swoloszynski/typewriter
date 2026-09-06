@@ -430,9 +430,15 @@
     btn.title = state.keyboard ? 'Hide the keyboard' : 'Show the keyboard';
     btn.setAttribute('aria-label', state.keyboard ? 'Keyboard shown' : 'Keyboard hidden');
 
-    // The stage grows by the height of the keyboard, so the sheet has to
-    // be placed again against the new printing point.
-    requestAnimationFrame(() => updateView(0));
+    // The stage grows as the drawer slides, so the printing point moves
+    // for the whole of the transition. Following it frame by frame keeps
+    // the sheet glued to the machine instead of jumping at the end.
+    const started = performance.now();
+    const follow = () => {
+      updateView(0);
+      if (performance.now() - started < 380) requestAnimationFrame(follow);
+    };
+    requestAnimationFrame(follow);
   }
 
   function toggleZoom() {

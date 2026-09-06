@@ -152,7 +152,6 @@ html, body {
 
 /* Hiding the keyboard leaves the machine's platen and scale in place --
    the keyboard is a reference, the mechanism is the thing being used. */
-body.no-keyboard .keyboard { display: none; }
 
 .tbtn-accent {
   border-color: var(--accent-dim);
@@ -822,13 +821,61 @@ body.no-keyboard .keyboard { display: none; }
 
 /* --------------------------------------------------------- keyboard */
 
+/* The keyboard slides away into the machine rather than vanishing, so
+   the eye can follow where it went and back again. */
 .keyboard {
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 5px;
   padding: 14px 12px 10px;
+  overflow: hidden;
+  max-height: 420px;
+  transition: max-height .32s ease, padding .32s ease, opacity .22s ease;
 }
+
+body.no-keyboard .keyboard {
+  max-height: 0;
+  padding-top: 0;
+  padding-bottom: 0;
+  opacity: 0;
+}
+
+/* The handle stays behind when the drawer is shut. */
+.drawer-pull {
+  display: block;
+  margin: -15px auto 0;
+  width: 78px;
+  height: 19px;
+  padding: 0;
+  position: relative;
+  z-index: 2;
+  border: 1px solid #10141a;
+  border-bottom: none;
+  border-radius: 7px 7px 0 0;
+  background: linear-gradient(#3b424a, #262c33);
+  color: #99a1a9;
+  cursor: pointer;
+  box-shadow: 0 -3px 9px rgba(0,0,0,.4);
+  transition: background .13s, color .13s;
+}
+
+.drawer-pull:hover { background: linear-gradient(#48505a, #2f363e); color: var(--text); }
+
+.drawer-pull svg {
+  display: block;
+  margin: 0 auto;
+  width: 21px;
+  height: 10px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  transition: transform .28s ease;
+}
+
+.drawer-pull[aria-pressed="false"] svg { transform: rotate(180deg); }
 
 .krow { display: flex; gap: 5px; }
 
