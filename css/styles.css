@@ -374,78 +374,168 @@ html, body {
 }
 
 /* The fixed point the paper slides beneath. */
+/* ---------------------------------------------------------------------
+   The printing mechanism.
+
+   Proportions are taken from a photograph of a real machine, measured
+   against the character advance, which is the one dimension shared
+   between the photo and this page. Here a character is 18px wide
+   (1/10in at the typing zoom), so:
+
+     ribbon band   3.7 character widths  ->  68px
+     type guide    2.4 character widths  ->  44px
+     typebar arm   0.37 character widths ->   7px
+
+   The arm is the easiest thing to get wrong: it is a thin steel bar,
+   well under half a character wide, not a strut.
+
+   The guide is given no size of its own, so every offset below is
+   measured straight down from the printing point.
+   --------------------------------------------------------------------- */
+
 .type-guide {
   position: absolute;
   z-index: 26;
+  width: 0;
+  height: 0;
   pointer-events: none;
-  transform: translate(-50%, -50%);
 }
 
-.guide-bracket {
-  position: relative;
-  width: 22px;
-  height: 30px;
-  margin: 0 auto;
-  border: 2px solid rgba(226,220,204,.5);
-  border-top: none;
-  border-radius: 0 0 3px 3px;
-  box-shadow: 0 2px 6px rgba(0,0,0,.5);
-}
-
-.guide-bracket::after {
-  content: "";
+/* The ribbon runs the width of the machine, between spools out of frame.
+   It rests below the printing line so it does not hide what was just
+   typed, and lifts into the path of the typebar while a key is down. */
+.ribbon-mount {
   position: absolute;
-  left: 50%; bottom: -8px;
-  width: 2px; height: 6px;
-  background: var(--accent);
-  transform: translateX(-50%);
+  left: 0;
+  top: 26px;
+  width: 2000px;
+  height: 68px;
+  margin-left: -1000px;
+  z-index: 1;
 }
 
-/* The inked ribbon, stretched between its spools in front of the platen. */
+/* A full lift is what the real vibrator does, but the ribbon then covers
+   the line of text on every keystroke, which strobes at typing speed. */
+.type-guide.striking .ribbon-mount { transform: translateY(-14px); }
+
 .ribbon-deck {
-  position: absolute;
-  left: 50%;
-  top: 34px;
-  width: 190px;
-  height: 13px;
-  transform: translateX(-50%);
+  position: relative;
+  height: 100%;
   display: flex;
   flex-direction: column;
-  border-radius: 2px;
   overflow: hidden;
-  box-shadow: inset 0 0 8px rgba(0,0,0,.6), 0 1px 4px rgba(0,0,0,.5);
+  box-shadow: inset 0 0 26px rgba(0,0,0,.55), 0 2px 7px rgba(0,0,0,.5);
   transition: transform .18s ease, opacity .18s ease;
 }
 
-.ribbon-half { flex: 1 1 0; }
-.ribbon-half.black { background: linear-gradient(#3c3934, #17160f); }
-.ribbon-half.red   { background: linear-gradient(#c8463f, #8e211d); }
+.ribbon-half {
+  flex: 1 1 0;
+  /* Woven cloth, not a painted strip. */
+  background-image:
+    repeating-linear-gradient(45deg,  rgba(255,255,255,.05) 0 1px, transparent 1px 4px),
+    repeating-linear-gradient(-45deg, rgba(0,0,0,.18) 0 1px, transparent 1px 4px);
+}
 
-/* Raise the strip so the red half sits in front of the typebars. */
-.ribbon-deck.on-red  { transform: translateX(-50%) translateY(-5.5px); }
-.ribbon-deck.on-corr { opacity: .2; }
+.ribbon-half.black { background-color: #201e1a; }
+.ribbon-half.red   { background-color: #d1451f; }
 
-/* The typebar that swings up and whacks the ribbon. */
-.typebar {
+/* Selecting red raises the deck by exactly one half-band. */
+.ribbon-deck.on-red  { transform: translateY(-34px); }
+.ribbon-deck.on-corr { opacity: .18; }
+
+/* The small guide fingers that hold the ribbon flat across the type. */
+.ribbon-fingers {
+  position: absolute;
+  left: 0;
+  top: 12px;
+  width: 210px;
+  height: 42px;
+  margin-left: -105px;
+  z-index: 2;
+}
+
+.ribbon-fingers i {
+  position: absolute;
+  top: 0;
+  width: 8px;
+  height: 100%;
+  border-radius: 4px 4px 2px 2px;
+  background: linear-gradient(90deg, #6c747c, #ccd3d9 40%, #8b939b 70%, #4a5158);
+  box-shadow: 0 1px 3px rgba(0,0,0,.55);
+}
+
+.ribbon-fingers i:nth-child(1) { left: 34px; }
+.ribbon-fingers i:nth-child(2) { left: 62px; }
+.ribbon-fingers i:nth-child(3) { right: 62px; }
+.ribbon-fingers i:nth-child(4) { right: 34px; }
+
+/* The type guide: the bright metal plate the slug is driven through.
+   In the real machine this is the most prominent object in view. */
+.type-plate {
+  position: absolute;
+  left: 0;
+  top: 2px;
+  width: 44px;
+  height: 104px;
+  margin-left: -22px;
+  z-index: 3;
+  border-radius: 3px;
+  background: linear-gradient(90deg, #7e868e 0%, #e6ebef 22%, #b9c1c8 55%, #838b93 80%, #5b636b 100%);
+  box-shadow: 0 2px 8px rgba(0,0,0,.6), inset 0 1px 0 rgba(255,255,255,.5);
+}
+
+/* The lightening hole punched through the plate. */
+.type-plate::after {
+  content: "";
   position: absolute;
   left: 50%;
-  bottom: -14px;
-  width: 5px;
-  height: 84px;
-  margin-left: -2.5px;
-  border-radius: 2px 2px 1px 1px;
-  background: linear-gradient(#8d949b, #4e565d 40%, #2b3035);
-  transform-origin: 50% 100%;
-  transform: translateY(78px);
+  top: 54px;
+  width: 15px;
+  height: 15px;
+  margin-left: -7.5px;
+  border-radius: 50%;
+  background: #2a2f34;
+  box-shadow: inset 0 1px 2px rgba(0,0,0,.8);
+}
+
+/* The typebar swings up to the printing point and holds there while the
+   key is held. Its length equals its pivot's distance below the printing
+   point, so the slug lands exactly on the line. */
+.typebar {
+  position: absolute;
+  left: 0;
+  bottom: -130px;
+  width: 7px;
+  height: 130px;
+  margin-left: -3.5px;
+  z-index: 4;
+  border-radius: 2px;
+  background: linear-gradient(90deg, #5a626a, #d3dae0 35%, #99a1a9 65%, #4c545c);
+  /* Two states, not a swing. A typebar crosses its arc in a few
+     milliseconds; animating the travel reads as a limb swinging in from
+     the side rather than a mechanism firing. Down and up, no transition,
+     as the real machine appears to the eye. */
+  transform: translateY(58px);
   opacity: 0;
 }
 
-.typebar.strike { animation: swing .11s ease-out; }
+/* The type slug: the block carrying the letter face. */
+.typebar::after {
+  content: "";
+  position: absolute;
+  top: -2px;
+  left: 50%;
+  width: 17px;
+  height: 20px;
+  margin-left: -8.5px;
+  border-radius: 2px;
+  background: linear-gradient(90deg, #545c64, #dde3e8 35%, #a0a8b0 65%, #454d55);
+  box-shadow: 0 2px 4px rgba(0,0,0,.7);
+}
 
-@keyframes swing {
-  0%   { opacity: 0; transform: translateY(78px); }
-  35%  { opacity: 1; transform: translateY(0); }
-  100% { opacity: 0; transform: translateY(74px); }
+.type-guide.striking .typebar {
+  transform: translateY(0);
+  opacity: 1;
 }
 
 .hint {

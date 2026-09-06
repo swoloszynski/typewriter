@@ -121,7 +121,10 @@
   function focusPoint() {
     return {
       x: Math.max(260, stage.clientWidth * 0.44),
-      y: Math.max(120, stage.clientHeight - 62)
+      // Room below the printing line for the mechanism. A ribbon is half
+      // an inch -- 84px at this zoom -- and the type guide and typebar
+      // sit under it, so 62px was never going to hold them to scale.
+      y: Math.max(140, stage.clientHeight - 150)
     };
   }
 
@@ -256,11 +259,23 @@
     }
   }
 
-  function flashTypebar() {
+  /* The typebar rises on key-down and stays up until the key is released,
+     lifting the ribbon with it -- the ribbon normally sits below the
+     printing line so it does not hide what has just been typed. A safety
+     timer drops it if a keyup never arrives (focus loss, a synthetic
+     event with no matching release). */
+  let releaseTimer = null;
+
+  function holdTypebar() {
     if (state.zoom !== 'type') return;
-    typebar.classList.remove('strike');
-    void typebar.offsetWidth;
-    typebar.classList.add('strike');
+    guide.classList.add('striking');
+    clearTimeout(releaseTimer);
+    releaseTimer = setTimeout(releaseTypebar, 260);
+  }
+
+  function releaseTypebar() {
+    clearTimeout(releaseTimer);
+    guide.classList.remove('striking');
   }
 
   /** Print one character at the carriage position. */
@@ -282,7 +297,7 @@
       const lifted = sheet.lift(state.col, state.line);
       advance(1);
       Sound.strike();
-      flashTypebar();
+      holdTypebar();
       updateView(70);
       if (!lifted) say('Nothing to lift off there.');
       return;
@@ -290,7 +305,7 @@
 
     const dead = DEAD_KEYS.includes(ch);
     sheet.stamp(ch, state.col, state.line, inkColor());
-    flashTypebar();
+    holdTypebar();
     Sound.strike();
 
     if (!dead) advance(1);
@@ -870,13 +885,17 @@
   });
 
   window.addEventListener('keyup', (e) => {
+    releaseTypebar();
     if (e.key === 'Shift') { state.shiftHeld = false; return; }
     if (e.metaKey || e.ctrlKey || e.altKey) return;
     if (!state.touched || state.feeding || overlayOpen()) return;
     if (e.key.length === 1 || e.key === 'Enter' || e.key === 'Backspace') Sound.keyUp();
   });
 
-  window.addEventListener('blur', () => { state.shiftHeld = false; });
+  window.addEventListener('blur', () => {
+    state.shiftHeld = false;
+    releaseTypebar();
+  });
 
   /* --------------------------------------------- click to move around */
 
@@ -925,7 +944,11 @@
     if (!e.target.closest('.menu-wrap')) closeExportMenu();
   });
 
-  keyboardEl.addEventListener('mouseup', () => { if (state.touched) Sound.keyUp(); });
+  keyboardEl.addEventListener('mouseup', () => {
+    releaseTypebar();
+    if (state.touched) Sound.keyUp();
+  });
+  keyboardEl.addEventListener('mouseleave', releaseTypebar);
 
   $('confirmCancel').addEventListener('click', closeConfirm);
   $('confirmProceed').addEventListener('click', () => {
