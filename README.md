@@ -15,10 +15,15 @@ out of letting strikes stack in one column.
 ## Run it locally
 
 ```bash
-python3 -m http.server 4173
+python3 serve.py
 ```
 
 Then open http://localhost:4173/. No build step, no dependencies.
+
+`serve.py` is `python3 -m http.server` with one addition: it tells the
+browser not to cache. Without that, an edited `.js` file keeps being
+served out of the browser cache and you debug code that is no longer
+running.
 
 ## What is simulated
 
