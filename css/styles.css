@@ -153,45 +153,6 @@ html, body {
 /* Hiding the keyboard leaves the machine's platen and scale in place --
    the keyboard is a reference, the mechanism is the thing being used. */
 
-/* The toolbar carries one link among its buttons. */
-a.tbtn { text-decoration: none; }
-
-/* Boba, not coffee: a cup with a straw and pearls stays legible at 17px
-   where a coffee cup is just a generic mug. The label is folded away
-   until hover so the toolbar keeps its width. */
-.tbtn-boba {
-  display: flex;
-  align-items: center;
-  overflow: hidden;
-}
-
-.tbtn-boba .pearl { fill: currentColor; stroke: none; }
-
-.tbtn-boba svg { transition: transform .26s cubic-bezier(.34, 1.56, .64, 1); }
-
-.tbtn-boba .label {
-  max-width: 0;
-  opacity: 0;
-  margin-left: 0;
-  white-space: nowrap;
-  font: 600 10px/1 "Helvetica Neue", Helvetica, sans-serif;
-  letter-spacing: .13em;
-  transition: max-width .26s ease, opacity .2s ease, margin-left .26s ease;
-}
-
-.tbtn-boba:hover {
-  color: var(--accent);
-  border-color: var(--accent-dim);
-}
-
-.tbtn-boba:hover svg { transform: translateY(-2px) rotate(-7deg); }
-
-.tbtn-boba:hover .label {
-  max-width: 40px;
-  opacity: 1;
-  margin-left: 7px;
-}
-
 .tbtn-accent {
   border-color: var(--accent-dim);
   color: var(--accent);
@@ -993,6 +954,65 @@ body.no-keyboard .keyboard {
   background: linear-gradient(#6a4b42, #4a3129);
   color: var(--accent);
 }
+
+/* ---------------------------------------------------------- tea jar */
+
+/* Parked in the corner rather than the toolbar. At toolbar size the cup
+   was 17px and had to fold its label away to fit; down here it can be
+   seen and say what it is. Sits under the panels and modals, so anything
+   opened over the page covers it. */
+.tea-jar {
+  position: fixed;
+  right: 16px;
+  bottom: 14px;
+  z-index: 38;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 5px;
+  padding: 11px 16px 12px;
+  border: 1px solid #443e36;
+  border-radius: 13px;
+  background: rgba(42, 37, 32, .92);
+  color: var(--text-dim);
+  text-decoration: none;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, .45);
+  transition: color .16s, border-color .16s, background .16s, transform .16s;
+}
+
+.tea-jar .tea-top {
+  font: 400 10.5px/1 "Helvetica Neue", Helvetica, sans-serif;
+  letter-spacing: .1em;
+  opacity: .78;
+}
+
+.tea-jar .tea-bottom {
+  font: 700 11.5px/1 "Helvetica Neue", Helvetica, sans-serif;
+  letter-spacing: .05em;
+}
+
+.tea-jar:hover {
+  color: var(--accent);
+  border-color: var(--accent-dim);
+  background: rgba(52, 44, 38, .96);
+  transform: translateY(-2px);
+}
+
+.tea-jar .boba {
+  display: block;
+  width: 30px;
+  height: 30px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.7;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  transition: transform .26s cubic-bezier(.34, 1.56, .64, 1);
+}
+
+.tea-jar .pearl { fill: currentColor; stroke: none; }
+
+.tea-jar:hover .boba { transform: translateY(-3px) rotate(-9deg); }
 
 /* ------------------------------------------------------------- help */
 
