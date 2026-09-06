@@ -76,6 +76,7 @@
     zoom: 'type',         // type | page
     sound: true,
     strict: true,
+    keyboard: true,
     bellRung: false,
     touched: false,
     feeding: false        // a sheet is being rolled in; the keys are dead
@@ -412,6 +413,28 @@
       state.ribbon === 'correction' ? '#ffffff' : INK.black;
   }
 
+  /* Both toolbar toggles carry their state in the icon, so the label and
+     the pressed attribute have to move with them. */
+  function applySound() {
+    Sound.enabled = state.sound;
+    const btn = document.querySelector('[data-act="sound"]');
+    btn.setAttribute('aria-pressed', String(state.sound));
+    btn.title = state.sound ? 'Mute' : 'Unmute';
+    btn.setAttribute('aria-label', state.sound ? 'Sound on' : 'Sound off');
+  }
+
+  function applyKeyboard() {
+    document.body.classList.toggle('no-keyboard', !state.keyboard);
+    const btn = document.querySelector('[data-act="keyboard"]');
+    btn.setAttribute('aria-pressed', String(state.keyboard));
+    btn.title = state.keyboard ? 'Hide the keyboard' : 'Show the keyboard';
+    btn.setAttribute('aria-label', state.keyboard ? 'Keyboard shown' : 'Keyboard hidden');
+
+    // The stage grows by the height of the keyboard, so the sheet has to
+    // be placed again against the new printing point.
+    requestAnimationFrame(() => updateView(0));
+  }
+
   function toggleZoom() {
     state.zoom = state.zoom === 'type' ? 'page' : 'type';
     updateView(380, 'cubic-bezier(.3,.9,.3,1)');
@@ -616,6 +639,8 @@
         index: doc.index,
         ribbon: state.ribbon,
         strict: state.strict,
+        sound: state.sound,
+        keyboard: state.keyboard,
         pages: doc.sheets.map((s) => s.toJSON())
       }));
     } catch (err) {
@@ -648,6 +673,8 @@
       setCurrent(Math.max(0, Math.min(data.index | 0, doc.sheets.length - 1)));
       if (RIBBONS.includes(data.ribbon)) state.ribbon = data.ribbon;
       if (typeof data.strict === 'boolean') state.strict = data.strict;
+      if (typeof data.sound === 'boolean') state.sound = data.sound;
+      if (typeof data.keyboard === 'boolean') state.keyboard = data.keyboard;
       return true;
     } catch (err) {
       // Anything unreadable is treated as no document at all rather than
@@ -932,8 +959,13 @@
         case 'text':   toggleText(); break;
         case 'sound':
           state.sound = !state.sound;
-          Sound.enabled = state.sound;
-          btn.setAttribute('aria-pressed', String(state.sound));
+          applySound();
+          scheduleSave();
+          break;
+        case 'keyboard':
+          state.keyboard = !state.keyboard;
+          applyKeyboard();
+          scheduleSave();
           break;
       }
       if (btn.closest('.menu')) closeExportMenu();
@@ -991,6 +1023,8 @@
   loadCarriage();
   renderStack();
   applyRibbon();
+  applySound();
+  applyKeyboard();
   syncKeyLatches();
   $('strictToggle').checked = state.strict;
   updateView(0);

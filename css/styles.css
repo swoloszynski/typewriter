@@ -119,7 +119,41 @@ html, body {
 
 .tbtn:hover { background: #464037; color: var(--text); }
 
-.tbtn[aria-pressed="false"] { opacity: .45; }
+/* Icon buttons carry their state in the glyph, so they must not also be
+   dimmed -- a muted speaker that is greyed out reads as disabled. */
+.tbtn:not(.tbtn-icon)[aria-pressed="false"] { opacity: .45; }
+
+.tbtn-icon {
+  display: grid;
+  place-items: center;
+  padding: 5px 9px;
+  min-width: 34px;
+}
+
+.tbtn-icon svg {
+  display: block;
+  width: 17px;
+  height: 17px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.7;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.tbtn-icon .cone { fill: currentColor; stroke-width: 1.4; }
+/* The keyboard's case is an outline; filling it paints over its keys. */
+.tbtn-icon .kbd-body { fill: none; }
+.tbtn-icon[aria-pressed="true"]  .mute { display: none; }
+.tbtn-icon[aria-pressed="false"] .wave { display: none; }
+.tbtn-icon[aria-pressed="false"] { color: var(--text-dim); }
+.tbtn-icon[aria-pressed="false"] .cone { fill: none; }
+.tbtn-icon[aria-pressed="true"]  { color: var(--text); }
+
+/* Hiding the keyboard leaves the machine's platen and scale in place --
+   the keyboard is a reference, the mechanism is the thing being used. */
+body.no-keyboard .keyboard,
+body.no-keyboard .legend { display: none; }
 
 .tbtn-accent {
   border-color: var(--accent-dim);

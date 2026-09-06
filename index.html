@@ -26,7 +26,22 @@
     <nav class="tools">
       <button class="tbtn" data-act="zoom"   title="Zoom out / in (Esc)">ZOOM</button>
       <button class="tbtn" data-act="ribbon" title="Change ribbon (F1)">RIBBON</button>
-      <button class="tbtn" data-act="sound"  title="Toggle sound" aria-pressed="true">SOUND</button>
+      <button class="tbtn tbtn-icon" data-act="sound" aria-pressed="true"
+              title="Mute" aria-label="Sound on">
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <path class="cone" d="M4 9.5h3.6L12.5 5.5v13L7.6 14.5H4z"/>
+          <path class="wave" d="M15.8 9.2a4 4 0 0 1 0 5.6"/>
+          <path class="wave" d="M18.4 6.6a7.7 7.7 0 0 1 0 10.8"/>
+          <path class="mute" d="M16.4 9.6l5.2 4.8M21.6 9.6l-5.2 4.8"/>
+        </svg>
+      </button>
+      <button class="tbtn tbtn-icon" data-act="keyboard" aria-pressed="true"
+              title="Hide the keyboard" aria-label="Keyboard shown">
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <rect class="kbd-body" x="2.5" y="6.5" width="19" height="11" rx="1.8"/>
+          <path class="wave" d="M6 10h.01M9.5 10h.01M13 10h.01M16.5 10h.01M6 13h.01M18 13h.01M9 15.5h6"/>
+        </svg>
+      </button>
       <span class="menu-wrap">
         <button class="tbtn" data-act="export" id="exportBtn"
                 aria-haspopup="true" aria-expanded="false">EXPORT&nbsp;&#9662;</button>
