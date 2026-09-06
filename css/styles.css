@@ -152,8 +152,7 @@ html, body {
 
 /* Hiding the keyboard leaves the machine's platen and scale in place --
    the keyboard is a reference, the mechanism is the thing being used. */
-body.no-keyboard .keyboard,
-body.no-keyboard .legend { display: none; }
+body.no-keyboard .keyboard { display: none; }
 
 .tbtn-accent {
   border-color: var(--accent-dim);
@@ -909,132 +908,6 @@ body.no-keyboard .legend { display: none; }
   color: var(--accent);
 }
 
-.legend {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: center;
-  gap: 4px 16px;
-  padding: 2px 16px 2px;
-  font: 400 10px/1.6 "Helvetica Neue", sans-serif;
-  color: #6f7780;
-  letter-spacing: .04em;
-}
-
-.legend kbd {
-  font: 600 9.5px/1 "Courier New", monospace;
-  color: #aab2ba;
-  background: #2b3137;
-  border: 1px solid #3c444b;
-  border-radius: 3px;
-  padding: 2px 4px;
-}
-
-.legend-strict label { display: flex; align-items: center; gap: 5px; cursor: pointer; }
-.legend-strict input { accent-color: var(--accent-dim); margin: 0; }
-
-/* ------------------------------------------------------------ modal */
-
-.modal {
-  position: absolute;
-  inset: 0;
-  z-index: 60;
-  display: grid;
-  place-items: center;
-  padding: 30px;
-  background: rgba(12, 10, 9, .72);
-  animation: fade-in .16s ease-out;
-}
-
-.modal[hidden] { display: none; }
-
-@keyframes fade-in { from { opacity: 0; } }
-
-.modal-card {
-  position: relative;
-  display: flex;
-  flex-direction: column;
-  width: min(720px, 100%);
-  max-height: 100%;
-  padding: 26px 30px 22px;
-  border-radius: 10px;
-  border: 1px solid #3b3530;
-  background: #262220;
-  box-shadow: 0 30px 80px rgba(0,0,0,.7);
-  animation: rise .2s cubic-bezier(.2,.9,.3,1);
-}
-
-@keyframes rise { from { transform: translateY(14px); opacity: 0; } }
-
-.modal-card h2 {
-  margin: 0 0 10px;
-  font: 600 12px/1 "Helvetica Neue", sans-serif;
-  letter-spacing: .18em;
-  text-transform: uppercase;
-  color: var(--accent);
-}
-
-.modal-note {
-  margin: 0 0 16px;
-  font: 400 12.5px/1.55 "Helvetica Neue", Helvetica, sans-serif;
-  color: #9d968a;
-}
-
-.text-out {
-  flex: 1 1 auto;
-  min-height: 120px;
-  margin: 0 0 18px;
-  padding: 16px 18px;
-  overflow: auto;
-  border-radius: 6px;
-  border: 1px solid #3b3530;
-  background: #1c1917;
-  color: #e8e1d4;
-  font: 400 13px/1.5 "Courier New", monospace;
-  white-space: pre;
-  tab-size: 4;
-  user-select: text;
-}
-
-.modal-actions {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  justify-content: flex-end;
-}
-
-.modal-spacer { flex: 1 1 auto; }
-
-.modal-card-narrow { width: min(540px, 100%); }
-
-.modal-body {
-  margin: 0 0 20px;
-  font: 400 13.5px/1.6 "Helvetica Neue", Helvetica, sans-serif;
-  color: #cdc5b7;
-}
-
-.modal-body b { color: #f0eade; }
-
-.tbtn-danger {
-  border-color: #85433b;
-  background: #61302a;
-  color: #f6cec2;
-}
-
-.tbtn-danger:hover { background: #74392f; color: #fff; }
-
-.modal-close {
-  position: absolute;
-  top: 12px; right: 16px;
-  border: none;
-  background: none;
-  color: #7d766c;
-  font-size: 24px;
-  line-height: 1;
-  cursor: pointer;
-}
-
-.modal-close:hover { color: var(--text); }
-
 /* ------------------------------------------------------------- help */
 
 .help {
@@ -1084,6 +957,48 @@ body.no-keyboard .legend { display: none; }
   padding: 1px 4px;
 }
 
+.help .keys {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 0;
+}
+
+.help .keys td {
+  padding: 5px 0;
+  vertical-align: top;
+  border-bottom: 1px solid #322e2a;
+  font-size: 13px;
+}
+
+.help .keys td:first-child {
+  width: 116px;
+  padding-right: 12px;
+  white-space: nowrap;
+}
+
+.help .keys tr:last-child td { border-bottom: none; }
+
+.help .setting { margin: 16px 0 0; }
+
+.help .setting label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  font-weight: 700;
+  font-size: 13px;
+  color: #f0eade;
+}
+
+.help .setting input { accent-color: var(--accent-dim); margin: 0; }
+
+.help .setting-note {
+  display: block;
+  margin: 5px 0 0 25px;
+  font-size: 12.5px;
+  color: #9d968a;
+}
+
 .help-close {
   position: absolute;
   top: 14px; right: 16px;
@@ -1102,5 +1017,4 @@ body.no-keyboard .legend { display: none; }
 @media (max-height: 720px) {
   .key { height: 30px; --kw: 30px; }
   .key.space { --kw: 250px; }
-  .legend { display: none; }
 }

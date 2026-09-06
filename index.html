@@ -123,19 +123,6 @@
   <section class="machine">
     <div class="keyboard" id="keyboard"></div>
 
-    <div class="legend">
-      <span><kbd>Return</kbd> carriage return</span>
-      <span><kbd>Backspace</kbd> carriage back &mdash; it does not erase</span>
-      <span><kbd>Tab</kbd> tab stop</span>
-      <span><kbd>Esc</kbd> zoom</span>
-      <span><kbd>F1</kbd> ribbon</span>
-      <span><kbd>F2</kbd> correction tape</span>
-      <span><kbd>F3</kbd> half space</span>
-      <span><kbd>F4</kbd> margin release</span>
-      <span class="legend-strict">
-        <label><input type="checkbox" id="strictToggle" checked> Period-correct keyboard</label>
-      </span>
-    </div>
   </section>
 
   <div class="modal" id="confirmModal" hidden>
@@ -178,6 +165,28 @@
     <p>There is no cursor and no undo. The carriage sits where it sits, and every key
     you hit stamps ink onto the sheet at that exact spot. Everything below follows
     from that one fact.</p>
+
+    <h3>Keys</h3>
+
+    <table class="keys">
+      <tr><td><kbd>Return</kbd></td><td>Carriage return</td></tr>
+      <tr><td><kbd>Backspace</kbd></td><td>Carriage back &mdash; it does not erase</td></tr>
+      <tr><td><kbd>Tab</kbd></td><td>Next tab stop</td></tr>
+      <tr><td><kbd>Esc</kbd></td><td>Zoom between the typing view and the whole page</td></tr>
+      <tr><td><kbd>F1</kbd></td><td>Change ribbon</td></tr>
+      <tr><td><kbd>F2</kbd></td><td>Correction tape</td></tr>
+      <tr><td><kbd>F3</kbd></td><td>Half space</td></tr>
+      <tr><td><kbd>F4</kbd></td><td>Margin release</td></tr>
+      <tr><td><kbd>&larr;</kbd> <kbd>&rarr;</kbd></td><td>Walk the carriage a column</td></tr>
+      <tr><td><kbd>&uarr;</kbd> <kbd>&darr;</kbd></td><td>Roll the platen a line</td></tr>
+      <tr><td>Click the sheet</td><td>Move the carriage there</td></tr>
+    </table>
+
+    <p class="setting">
+      <label><input type="checkbox" id="strictToggle" checked> Period-correct keyboard</label>
+      <span class="setting-note">Turn this off and every key on your keyboard
+      prints, including the ones this machine never had.</span>
+    </p>
 
     <h3>There is no <span class="k">1</span> and no <span class="k">0</span></h3>
     <p>Typebars were expensive. Use a capital <b>I</b> for one and a capital <b>O</b>
