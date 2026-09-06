@@ -386,8 +386,11 @@ html, body {
      type guide    2.4 character widths  ->  44px
      typebar arm   0.37 character widths ->   7px
 
-   The arm is the easiest thing to get wrong: it is a thin steel bar,
-   well under half a character wide, not a strut.
+   The arm is drawn at 10px rather than the measured 7px, and the slug
+   larger again. The measurement is of a bar photographed close up, where
+   depth, shading and a machined edge all give it presence; flattened to a
+   plain rectangle at this size it reads as a hairline instead of a moving
+   part. Deliberate departure, not drift.
 
    The guide is given no size of its own, so every offset below is
    measured straight down from the printing point.
@@ -442,6 +445,45 @@ html, body {
 /* Selecting red raises the deck by exactly one half-band. */
 .ribbon-deck.on-red  { transform: translateY(-34px); }
 .ribbon-deck.on-corr { opacity: .18; }
+
+/* The machine's body, closing in from both sides and sloping down to the
+   type opening at the centre. Without it the guide plate reads as an
+   unexplained piece of metal floating over the paper: the ribbon has to
+   run into something for the eye to place what it is looking at. */
+.shell {
+  position: absolute;
+  /* Starts level with the top of the ribbon, not under the text: any
+     higher and the covers read as a curtain drawn across the paper. */
+  top: 20px;
+  width: 900px;
+  height: 160px;
+  z-index: 5;
+  background: linear-gradient(#565e66 0%, #3b424a 20%, #272c32 68%, #191d22 100%);
+  /* drop-shadow follows the clipped outline, so the lit edge runs along
+     the slope rather than around the element's box. */
+  filter: drop-shadow(0 -1.5px 0 rgba(255,255,255,.16));
+}
+
+/* The type opening is about 1.8in across. The covers take the ribbon's
+   ends and little else -- closing in further leaves a letterbox with the
+   ribbon hidden, which is the opposite of the machine being visible. */
+.shell.left  { right: 160px; clip-path: polygon(0 0, 100% 30%, 100% 100%, 0 100%); }
+.shell.right { left: 160px;  clip-path: polygon(0 30%, 100% 0, 100% 100%, 0 100%); }
+
+/* A screw in each cover, for scale as much as decoration. */
+.shell::after {
+  content: "";
+  position: absolute;
+  bottom: 30px;
+  width: 13px;
+  height: 13px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 38% 32%, #a2aab1, #4d545b 58%, #272c31);
+  box-shadow: inset 0 0 0 1px rgba(0,0,0,.45), 0 1px 2px rgba(0,0,0,.5);
+}
+
+.shell.left::after  { right: 46px; }
+.shell.right::after { left: 46px; }
 
 /* The small guide fingers that hold the ribbon flat across the type. */
 .ribbon-fingers {
@@ -505,9 +547,9 @@ html, body {
   position: absolute;
   left: 0;
   bottom: -130px;
-  width: 7px;
+  width: 10px;
   height: 130px;
-  margin-left: -3.5px;
+  margin-left: -5px;
   z-index: 4;
   border-radius: 2px;
   background: linear-gradient(90deg, #5a626a, #d3dae0 35%, #99a1a9 65%, #4c545c);
@@ -525,9 +567,9 @@ html, body {
   position: absolute;
   top: -2px;
   left: 50%;
-  width: 17px;
-  height: 20px;
-  margin-left: -8.5px;
+  width: 25px;
+  height: 28px;
+  margin-left: -12.5px;
   border-radius: 2px;
   background: linear-gradient(90deg, #545c64, #dde3e8 35%, #a0a8b0 65%, #454d55);
   box-shadow: 0 2px 4px rgba(0,0,0,.7);
