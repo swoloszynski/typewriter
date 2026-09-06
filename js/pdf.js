@@ -17,7 +17,12 @@
 const PDFExport = (() => {
 
   const PT = 72 / 100;            // page pixels (100dpi) -> PDF points
-  const PAPER = [0.949, 0.933, 0.882];   // #f2eee1, for flattening only
+
+  /* No background is drawn, so ink lands on whatever paper goes through
+     the printer: white. Partly-inked strikes are flattened against that
+     rather than against the cream of the screen -- otherwise a faint
+     character prints faintly tan, tinted by a colour that is not there. */
+  const PAPER = [1, 1, 1];
 
   /* Trim floats: PDF does not care, but the file is smaller and far
      easier to read when something goes wrong. */

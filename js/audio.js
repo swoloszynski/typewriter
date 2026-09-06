@@ -42,8 +42,18 @@ const Sound = (() => {
 
   const rand = (a, b) => a + Math.random() * (b - a);
 
-  /** A burst of band-passed noise. */
-  function noise(t, { dur, freq, q, gain, type = 'bandpass' }) {
+  /**
+   * A burst of band-passed noise.
+   *
+   * The lowpass at the end is not decoration. White noise carries equal
+   * energy per hertz, so the octave from 12kHz up holds as much of it as
+   * everything below combined, and a gentle bandpass barely touches it.
+   * Left alone, every burst here sprayed a third of its energy above
+   * 12kHz -- against a tenth in a recording of the real machine -- and
+   * that reads as hiss rather than as a struck object. Real acoustics
+   * roll the top octave off; so does this.
+   */
+  function noise(t, { dur, freq, q, gain, type = 'bandpass', lp = 9000 }) {
     const src = ctx.createBufferSource();
     src.buffer = noiseBuffer;
     src.playbackRate.value = rand(0.85, 1.15);
@@ -53,12 +63,17 @@ const Sound = (() => {
     filter.frequency.value = freq;
     filter.Q.value = q;
 
+    const ceiling = ctx.createBiquadFilter();
+    ceiling.type = 'lowpass';
+    ceiling.frequency.value = lp;
+    ceiling.Q.value = 0.7;
+
     const g = ctx.createGain();
     g.gain.setValueAtTime(0, t);
     g.gain.linearRampToValueAtTime(gain, t + 0.002);
     g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
 
-    src.connect(filter).connect(g).connect(master);
+    src.connect(filter).connect(ceiling).connect(g).connect(master);
     src.start(t);
     src.stop(t + dur + 0.02);
   }
@@ -207,7 +222,7 @@ const Sound = (() => {
       }
 
       // The hammer itself: a bright tick, gone almost before it lands.
-      noise(t, { dur: 0.010, freq: 7000, q: 0.9, gain: 0.060, type: 'highpass' });
+      noise(t, { dur: 0.010, freq: 7000, q: 0.9, gain: 0.060, type: 'highpass', lp: 16000 });
       noise(t, { dur: 0.028, freq: 3400, q: 1.4, gain: 0.035 });
     },
 
