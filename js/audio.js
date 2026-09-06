@@ -167,41 +167,35 @@ const Sound = (() => {
     /**
      * The margin bell: a small steel dome struck by a hammer.
      *
-     * The frequencies below are the real thing, measured off a recording
-     * of a typewriter bell rather than guessed. Three findings shaped
-     * this, all of them counter-intuitive:
+     * The frequencies are the real thing, measured off a recording of a
+     * typewriter bell rather than guessed. Three findings shaped this,
+     * all counter-intuitive:
      *
-     * It rings high -- around 3.2kHz, not the ~1kHz a "bell" suggests.
-     * It is top-heavy: the 2.64 partial is louder than the fundamental,
+     * It rings high -- around 3.2kHz, not the ~1kHz "bell" suggests. It
+     * is top-heavy: the 2.64 partial is louder than the fundamental,
      * which is what makes the sound bright and small rather than round.
-     * And every mode is really a close PAIR. A cast dome is never quite
-     * symmetrical, so each mode splits in two a few hertz apart. The
-     * fundamental's pair sits 79Hz apart, close enough to fall inside one
-     * critical band, and the roughness that produces is the tang your ear
-     * reads as "bell" instead of "sine wave". It is the single most
-     * important detail here and the easiest one to leave out.
+     * And every mode is really a close PAIR, because a cast dome is
+     * never quite symmetrical. The fundamental's pair sits 79Hz apart,
+     * inside one critical band, and the roughness that produces is the
+     * tang the ear reads as "bell" instead of "sine wave". It is the
+     * single most important detail here and the easiest to leave out.
      *
-     * Decay is two-stage: half the energy is gone in 50ms, but the tail
-     * runs on for a second and a half.
+     * Held as ratios of the fundamental so the same bell can be struck
+     * at another pitch without losing what makes it a bell.
      */
-    bell() {
-      if (!ready()) return;
-      const t = ctx.currentTime;
-
-      // Where the hammer lands changes how strongly it excites each mode,
-      // so the balance shifts a little from strike to strike.
-      const tune = rand(0.998, 1.002);
-
+    _strike(t, root, level) {
       const modes = [
-        { pair: [3237, 3316], gain: 0.042, dur: 1.45 },
-        { pair: [8552, 8563], gain: 0.038, dur: 0.85 },
-        { pair: [15111, 15138], gain: 0.014, dur: 0.42 }
+        { pair: [1.0000, 1.0244], gain: 0.042, dur: 1.45 },
+        { pair: [2.6420, 2.6454], gain: 0.038, dur: 0.85 },
+        { pair: [4.6683, 4.6767], gain: 0.014, dur: 0.42 }
       ];
 
       for (const m of modes) {
+        // Where the hammer lands changes how strongly it excites each
+        // mode, so the balance shifts from strike to strike.
         const spread = rand(0.85, 1.15);
-        for (const hz of m.pair) {
-          const freq = hz * tune;
+        for (const ratio of m.pair) {
+          const freq = root * ratio;
           const osc = ctx.createOscillator();
           osc.type = 'sine';
 
@@ -212,7 +206,7 @@ const Sound = (() => {
 
           const g = ctx.createGain();
           g.gain.setValueAtTime(0, t);
-          g.gain.linearRampToValueAtTime(m.gain * spread, t + 0.002);
+          g.gain.linearRampToValueAtTime(m.gain * spread * level, t + 0.002);
           g.gain.exponentialRampToValueAtTime(0.0001, t + m.dur);
 
           osc.connect(g).connect(master);
@@ -222,8 +216,31 @@ const Sound = (() => {
       }
 
       // The hammer itself: a bright tick, gone almost before it lands.
-      noise(t, { dur: 0.010, freq: 7000, q: 0.9, gain: 0.060, type: 'highpass', lp: 16000 });
-      noise(t, { dur: 0.028, freq: 3400, q: 1.4, gain: 0.035 });
+      noise(t, { dur: 0.010, freq: 7000, q: 0.9, gain: 0.060 * level, type: 'highpass', lp: 16000 });
+      noise(t, { dur: 0.028, freq: 3400, q: 1.4, gain: 0.035 * level });
+    },
+
+    /** Approaching the right margin. */
+    bell() {
+      if (!ready()) return;
+      this._strike(ctx.currentTime, 3237 * rand(0.998, 1.002), 1);
+    },
+
+    /**
+     * Approaching the foot of the page.
+     *
+     * Struck twice, a fifth lower. Running out of paper is a different
+     * problem from running out of line, so it has to be tellable apart
+     * without listening for it -- but it is the same machine, so it is
+     * the same bell rather than an unrelated sound. Two strikes read as
+     * deliberate where one reads as the margin bell heard wrong.
+     */
+    pageBell(delay = 0) {
+      if (!ready()) return;
+      const t = ctx.currentTime + delay;
+      const root = 3237 * 0.667 * rand(0.998, 1.002);
+      this._strike(t, root, 0.92);
+      this._strike(t + 0.19, root, 0.62);
     },
 
     /**

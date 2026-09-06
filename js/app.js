@@ -335,8 +335,20 @@
     updateView(80, 'ease-out');
   }
 
+  /* Warn once, as the platen crosses into the last few lines. Testing the
+     crossing rather than the position means it does not nag on every
+     return once you are already down there. */
+  const bottomWarnAt = MARGIN.bottom - MARGIN.bottomBell;
+
+  function checkBottomBell(before, delay) {
+    if (before >= bottomWarnAt || state.line < bottomWarnAt) return;
+    Sound.pageBell(delay);
+    say('Near the foot of the page — NEW PAGE winds in a fresh one.');
+  }
+
   function carriageReturn() {
     firstTouch();
+    const wasOnLine = state.line;
     state.col = MARGIN.left;
     state.line = Math.min(state.line + 1, PAGE.lines - 1);
     state.bellRung = false;
@@ -345,18 +357,20 @@
     Sound.carriageReturn();
     updateView(360, 'cubic-bezier(.4,.05,.25,1)');
 
-    if (state.line >= PAGE.lines - 4) {
-      say('Near the bottom of the page — NEW PAGE winds in a fresh one.');
-    }
+    // Held back until the carriage has landed, or it rings underneath
+    // the slam and is heard as part of it.
+    checkBottomBell(wasOnLine, 0.42);
   }
 
   function rollPlaten(dir) {
     firstTouch();
     const next = state.line + dir;
     if (next < 0 || next > PAGE.lines - 1) return;
+    const wasOnLine = state.line;
     state.line = next;
     Sound.platen();
     updateView(200, 'ease-out');
+    checkBottomBell(wasOnLine, 0.06);
   }
 
   function moveCarriage(dir) {

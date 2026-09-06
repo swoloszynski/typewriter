@@ -29,10 +29,12 @@ const PAGE = {
 };
 
 const MARGIN = {
-  left: 10,   // one inch in
-  right: 75,  // one inch from the right edge
-  top: 6,     // one inch down
-  bell: 8     // columns of warning before the right margin
+  left: 10,       // one inch in
+  right: 75,      // one inch from the right edge
+  top: 6,         // one inch down
+  bottom: 60,     // one inch up from the foot
+  bell: 8,        // columns of warning before the right margin
+  bottomBell: 4   // lines of warning before the foot of the page
 };
 
 const INK = { black: '#23211e', red: '#b5322e' };
