@@ -721,6 +721,35 @@
     $('exportBtn').setAttribute('aria-expanded', 'false');
   }
 
+  /* Everything at once: the document as a PDF and as text, plus one PNG
+     per page, since a PNG is a picture of a single sheet. Canvas hands
+     back its blob through a callback, so the pages are gathered before
+     the zip is assembled. */
+  async function saveZip() {
+    if (documentEmpty()) return say('Nothing typed yet.');
+    say('Packing everything up...');
+
+    const files = [
+      { name: 'document.pdf',
+        blob: PDFExport.build(doc.sheets.map((s) => s.strikes)) },
+      { name: 'document.txt',
+        blob: new Blob([documentText()], { type: 'text/plain;charset=utf-8' }) }
+    ];
+
+    for (let i = 0; i < doc.sheets.length; i++) {
+      const canvas = doc.sheets[i].toCanvas(2);
+      const png = await new Promise((res) => canvas.toBlob(res, 'image/png'));
+      files.push({ name: `page-${i + 1}.png`, blob: png });
+    }
+
+    try {
+      download(await ZipWriter.build(files), `typed-document-${stamp()}.zip`);
+      say(`Saved ${files.length} files as a zip.`);
+    } catch (err) {
+      say('Could not build the zip.', true);
+    }
+  }
+
   function toggleHelp() {
     helpEl.hidden = !helpEl.hidden;
     if (!helpEl.hidden) textModal.hidden = true;
@@ -972,6 +1001,7 @@
         case 'zoom':   toggleZoom(); break;
         case 'ribbon': cycleRibbon(); break;
         case 'png':    savePNG(); break;
+        case 'zip':    saveZip(); break;
         case 'pdf':    savePDF(); break;
         case 'new':    addPage(); break;
         case 'over':   requestStartOver(); break;
