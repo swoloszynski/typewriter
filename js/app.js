@@ -119,6 +119,16 @@
   /* The strike point. Biased left of centre: at the start of a line the
      sheet lies to the right of it, and that is where the writing goes. */
   function focusPoint() {
+    // The photographed machine is a fixed object: it needs its type guide
+    // centred and a good deal more room beneath the line than the drawn
+    // one, which was built to fit whatever space it was given.
+    const photo = document.body.classList.contains('machine-photo');
+    if (photo) {
+      return {
+        x: stage.clientWidth / 2,
+        y: Math.max(150, stage.clientHeight - 380)
+      };
+    }
     return {
       x: Math.max(260, stage.clientWidth * 0.44),
       // Room below the printing line for the mechanism. A ribbon is half
@@ -978,6 +988,11 @@
   window.addEventListener('resize', () => updateView(0));
 
   /* ----------------------------------------------------------- start */
+
+  // ?machine=photo swaps the drawn mechanism for the photograph.
+  if (new URLSearchParams(location.search).get('machine') === 'photo') {
+    document.body.classList.add('machine-photo');
+  }
 
   buildKeyboard();
 

@@ -443,6 +443,92 @@ html, body {
 .ribbon-deck.on-red  { transform: translateY(-34px); }
 .ribbon-deck.on-corr { opacity: .18; }
 
+/* ---------------------------------------------------------------------
+   Photographed machine (optional, ?machine=photo).
+
+   Scaled by measurement rather than by eye. The photo contains typed
+   text, so its character advance can be measured directly: 35.2px in the
+   2400px original. Matching that to this page's 18px character gives a
+   scale of 0.511, which lands the photographed ribbon at 104px -- within
+   a few pixels of the half-inch computed independently.
+
+   The image is positioned so its own printing point sits on ours, and
+   clipped at that line so its paper is discarded and ours shows instead.
+   --------------------------------------------------------------------- */
+.photo-machine {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 2400px;
+  height: 620px;
+  margin-left: -1200px;
+  overflow: hidden;
+  z-index: 6;
+  display: none;
+  pointer-events: none;
+  /* The photograph is narrower than a wide viewport; the fill carries
+     the machine out to the edges. */
+  background: #26282b;
+}
+
+.photo-machine img {
+  position: absolute;
+  left: 445px;      /* 1200 - 755, putting its type guide on ours */
+  top: -233px;      /* its printing line on ours */
+  width: 1227px;    /* 2400 x 0.511 */
+  display: block;
+}
+
+body.machine-photo .photo-machine { display: block; }
+
+/* In photo mode the drawn mechanism steps aside, but the typebar stays:
+   a real machine mid-strike shows one bar raised and the rest at rest. */
+body.machine-photo .shell,
+body.machine-photo .ribbon-mount,
+body.machine-photo .ribbon-fingers,
+body.machine-photo .type-plate { display: none; }
+
+body.machine-photo .typebar { z-index: 7; }
+
+/* The machine's body, closing in from both sides and sloping down to the
+   type opening at the centre. Without it the guide plate reads as an
+   unexplained piece of metal floating over the paper: the ribbon has to
+   run into something for the eye to place what it is looking at. */
+.shell {
+  position: absolute;
+  /* Starts level with the top of the ribbon, not under the text: any
+     higher and the covers read as a curtain drawn across the paper. */
+  top: 20px;
+  width: 900px;
+  height: 160px;
+  z-index: 5;
+  background: linear-gradient(#565e66 0%, #3b424a 20%, #272c32 68%, #191d22 100%);
+  /* drop-shadow follows the clipped outline, so the lit edge runs along
+     the slope rather than around the element's box. */
+  filter: drop-shadow(0 -1.5px 0 rgba(255,255,255,.16));
+}
+
+/* The type opening is about 1.8in across. The covers take the ribbon's
+   ends and little else -- closing in further leaves a letterbox with the
+   ribbon hidden, which is the opposite of the machine being visible. */
+.shell.left  { right: 160px; clip-path: polygon(0 0, 100% 30%, 100% 100%, 0 100%); }
+.shell.right { left: 160px;  clip-path: polygon(0 30%, 100% 0, 100% 100%, 0 100%); }
+
+/* A screw in each cover, for scale as much as decoration. */
+.shell::after {
+  content: "";
+  position: absolute;
+  bottom: 30px;
+  width: 13px;
+  height: 13px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 38% 32%, #a2aab1, #4d545b 58%, #272c31);
+  box-shadow: inset 0 0 0 1px rgba(0,0,0,.45), 0 1px 2px rgba(0,0,0,.5);
+}
+
+.shell.left::after  { right: 46px; }
+.shell.right::after { left: 46px; }
+
 /* The small guide fingers that hold the ribbon flat across the type. */
 .ribbon-fingers {
   position: absolute;
