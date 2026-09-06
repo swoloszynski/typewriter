@@ -153,6 +153,45 @@ html, body {
 /* Hiding the keyboard leaves the machine's platen and scale in place --
    the keyboard is a reference, the mechanism is the thing being used. */
 
+/* The toolbar carries one link among its buttons. */
+a.tbtn { text-decoration: none; }
+
+/* Boba, not coffee: a cup with a straw and pearls stays legible at 17px
+   where a coffee cup is just a generic mug. The label is folded away
+   until hover so the toolbar keeps its width. */
+.tbtn-boba {
+  display: flex;
+  align-items: center;
+  overflow: hidden;
+}
+
+.tbtn-boba .pearl { fill: currentColor; stroke: none; }
+
+.tbtn-boba svg { transition: transform .26s cubic-bezier(.34, 1.56, .64, 1); }
+
+.tbtn-boba .label {
+  max-width: 0;
+  opacity: 0;
+  margin-left: 0;
+  white-space: nowrap;
+  font: 600 10px/1 "Helvetica Neue", Helvetica, sans-serif;
+  letter-spacing: .13em;
+  transition: max-width .26s ease, opacity .2s ease, margin-left .26s ease;
+}
+
+.tbtn-boba:hover {
+  color: var(--accent);
+  border-color: var(--accent-dim);
+}
+
+.tbtn-boba:hover svg { transform: translateY(-2px) rotate(-7deg); }
+
+.tbtn-boba:hover .label {
+  max-width: 40px;
+  opacity: 1;
+  margin-left: 7px;
+}
+
 .tbtn-accent {
   border-color: var(--accent-dim);
   color: var(--accent);
@@ -1045,6 +1084,14 @@ body.no-keyboard .keyboard {
   font-size: 12.5px;
   color: #9d968a;
 }
+
+.help .support-link {
+  color: var(--accent);
+  text-decoration: none;
+  border-bottom: 1px solid var(--accent-dim);
+}
+
+.help .support-link:hover { color: #ffc7b3; }
 
 .help-close {
   position: absolute;
