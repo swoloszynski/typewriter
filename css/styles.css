@@ -1014,6 +1014,139 @@ body.no-keyboard .keyboard {
 
 .tea-jar:hover .boba { transform: translateY(-3px) rotate(-9deg); }
 
+/* ------------------------------------------------------------ modal */
+
+/* Fixed rather than absolute: #app is static, so an absolute modal
+   resolves against the initial containing block by accident rather than
+   by intent, and would break the moment any ancestor gained a position. */
+.modal {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  /* Flex, not grid. An auto-sized grid row grows past its container, so
+     the card's max-height resolved against the row rather than the
+     screen and capped nothing -- a long document made the card taller
+     than the window and pushed its own buttons out of reach. A flex
+     item's percentage max-height resolves against the container, which
+     is the viewport. */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 26px;
+  background: rgba(12, 10, 9, .74);
+  animation: fade-in .16s ease-out;
+}
+
+.modal[hidden] { display: none; }
+
+@keyframes fade-in { from { opacity: 0; } }
+
+.modal-card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  width: min(720px, 100%);
+  max-height: 100%;
+  padding: 26px 30px 22px;
+  border-radius: 10px;
+  border: 1px solid #3b3530;
+  background: #262220;
+  box-shadow: 0 30px 80px rgba(0, 0, 0, .7);
+  animation: rise .2s cubic-bezier(.2, .9, .3, 1);
+}
+
+@keyframes rise { from { transform: translateY(14px); opacity: 0; } }
+
+.modal-card h2 {
+  flex: 0 0 auto;
+  margin: 0 0 10px;
+  padding-right: 28px;          /* clear of the close button */
+  font: 600 12px/1 "Helvetica Neue", Helvetica, sans-serif;
+  letter-spacing: .18em;
+  text-transform: uppercase;
+  color: var(--accent);
+}
+
+.modal-note {
+  flex: 0 0 auto;
+  margin: 0 0 16px;
+  font: 400 12.5px/1.55 "Helvetica Neue", Helvetica, sans-serif;
+  color: #9d968a;
+}
+
+/* The text scrolls inside the card. Everything else keeps its height, so
+   a long document cannot push the buttons off the bottom of the screen. */
+.text-out {
+  flex: 1 1 auto;
+  min-height: 80px;
+  margin: 0 0 16px;
+  padding: 16px 18px;
+  overflow: auto;
+  border-radius: 6px;
+  border: 1px solid #3b3530;
+  background: #1c1917;
+  color: #e8e1d4;
+  font: 400 13px/1.5 "Courier New", monospace;
+  white-space: pre;
+  tab-size: 4;
+  user-select: text;
+}
+
+.modal-actions {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  justify-content: flex-end;
+}
+
+.modal-spacer { flex: 1 1 auto; }
+
+.modal-card-narrow { width: min(540px, 100%); }
+
+.modal-body {
+  flex: 0 0 auto;
+  margin: 0 0 20px;
+  font: 400 13.5px/1.6 "Helvetica Neue", Helvetica, sans-serif;
+  color: #cdc5b7;
+}
+
+.modal-body b { color: #f0eade; }
+
+.tbtn-danger {
+  border-color: #85433b;
+  background: #61302a;
+  color: #f6cec2;
+}
+
+.tbtn-danger:hover { background: #74392f; color: #fff; }
+
+.modal-close {
+  position: absolute;
+  top: 10px; right: 12px;
+  width: 30px;
+  height: 30px;
+  border: none;
+  border-radius: 6px;
+  background: none;
+  color: #7d766c;
+  font-size: 23px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.modal-close:hover { color: var(--text); background: #332e2a; }
+
+/* A laptop at 1280x720 leaves little room once the browser chrome is
+   taken out, so the framing tightens rather than the card overflowing. */
+@media (max-height: 760px) {
+  .modal { padding: 14px; }
+  .modal-card { padding: 18px 20px 16px; }
+  .modal-note { margin-bottom: 11px; font-size: 12px; line-height: 1.45; }
+  .modal-body { margin-bottom: 14px; }
+  .text-out { margin-bottom: 12px; padding: 12px 14px; font-size: 12.5px; }
+}
+
 /* ------------------------------------------------------------- help */
 
 .help {
