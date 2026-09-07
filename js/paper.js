@@ -122,56 +122,54 @@ function flattenCell(chars) {
 }
 
 /**
- * Join lines the carriage wrapped back into paragraphs.
+ * Join wrapped lines back into paragraphs.
  *
- * A return at the end of a typewriter line is usually not a paragraph
- * break; it is the carriage running out of room. Carried into Markdown
- * literally, a paragraph arrives as five stub lines, which is what makes
- * pasted typewriter text look broken.
+ * A return at the end of a typewriter line is usually the carriage
+ * running out of room, not a paragraph break, so carrying those breaks
+ * across literally makes a paragraph arrive as several stub lines.
  *
- * A line that ran to about the full measure was almost certainly wrapped,
- * so the next line continues it. A line that stopped short ended on
- * purpose -- a heading, a list item, or the last line of a paragraph --
- * and its break is kept. Blank lines and indents always break, since an
- * indent is how a typist starts a new paragraph.
+ * Two rules, no inference. A blank line starts a new paragraph, and
+ * nothing else does. A line beginning with a hash is a heading and
+ * stands alone. Everything between blank lines is one paragraph,
+ * whatever its lines happen to measure.
+ *
+ * Leading whitespace is dropped when lines are joined. Four spaces at
+ * the start of a line is a code block in Markdown, which a paragraph
+ * indent would otherwise turn the paragraph into.
  */
-function reflow(lines) {
-  const width = Math.max(0, ...lines.map((l) => l.raw.length));
-  const ranFull = (l) => l.raw.length >= width - 6;
+function reflow(lines, markdown) {
+  const isHeading = (s) => /^\s*#/.test(s);
 
-  // Markdown constructs that own their line. `#` needs its space to be a
-  // heading, so a bare "#word" is body text and reflows like any other.
-  const opensBlock = (s) => /^\s*(#{1,6}\s|[-*+]\s|\d+[.)]\s|>)/.test(s);
+  // A typed "#Heading" has no space after the hash, so Markdown reads it
+  // as body text. Normalising is the whole of the heading support.
+  const asHeading = (s) => s.replace(/^\s*(#{1,6})#*\s*/, (_, hashes) => hashes + ' ');
 
-  const out = [];
+  const blocks = [];
+  let paragraph = null;
+
   for (const line of lines) {
-    const prev = out[out.length - 1];
-    const joins = prev
-      && prev.raw.trim() && line.raw.trim()
-      && ranFull(prev)
-      && !opensBlock(prev.raw)
-      && !opensBlock(line.raw)
-      && !/^\s{2,}/.test(line.raw);          // an indent starts a paragraph
+    if (!line.raw.trim()) {           // blank: end the paragraph
+      paragraph = null;
+      continue;
+    }
 
-    if (joins) {
-      prev.text = prev.text.replace(/\s+$/, '') + ' ' + line.text.replace(/^\s+/, '');
-      prev.raw = prev.raw + ' ' + line.raw.trimStart();
+    if (isHeading(line.raw)) {
+      blocks.push(markdown ? asHeading(line.text) : line.text.trim());
+      paragraph = null;
+      continue;
+    }
+
+    if (paragraph) {
+      paragraph.parts.push(line.text.trim());
     } else {
-      out.push({ ...line });
+      paragraph = { parts: [line.text.trim()] };
+      blocks.push(paragraph);
     }
   }
 
-  // Two lines that were deliberately not joined are separate blocks, but
-  // Markdown only sees that if a blank line divides them: a single
-  // newline is a soft wrap, so a heading and the paragraph beneath it
-  // would otherwise render as one run-on paragraph.
-  const spaced = [];
-  for (const line of out) {
-    const prev = spaced[spaced.length - 1];
-    if (prev && prev.trim() && line.text.trim()) spaced.push('');
-    spaced.push(line.text);
-  }
-  return spaced;
+  return blocks
+    .map((b) => (typeof b === 'string' ? b : b.parts.join(' ')))
+    .join('\n\n');
 }
 
 /**
@@ -393,10 +391,9 @@ class Sheet {
     return lines;
   }
 
-  /** The sheet as plain text, line for line as it sits on the page. */
+  /** The sheet as plain text, wrapped lines joined into paragraphs. */
   toText() {
-    return this._rows((row) => row.map((c) => c.ch).join(''))
-               .map((l) => l.text).join('\n');
+    return reflow(this._rows((row) => row.map((c) => c.ch).join('')), false);
   }
 
   /**
@@ -408,7 +405,7 @@ class Sheet {
    * bold and italic rather than being flattened away.
    */
   toMarkdown() {
-    return reflow(this._rows(emphasise)).join('\n');
+    return reflow(this._rows(emphasise), true);
   }
 
   /** Flatten the sheet to a canvas so it can be saved as a PNG. */

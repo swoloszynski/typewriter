@@ -87,8 +87,27 @@ page at exactly ten characters to the inch — the same measurements the
 sheet was typed at. No paper colour is drawn, so it prints on the paper you
 actually put in the tray.
 
-Per-strike ink density is flattened against the paper colour rather than
-carried as transparency, which is exact over an opaque background.
+Per-strike ink density is flattened against white rather than carried as
+transparency, which is exact over an opaque background. White, not the
+cream of the screen, because no background is drawn and the ink lands on
+whatever paper goes through the printer.
+
+**TEXT** and **MD** read the sheet back as writing rather than as a
+picture of a page. Lines the carriage wrapped are joined into paragraphs,
+since a return at the end of a typewriter line is usually the carriage
+running out of room. Two rules decide the structure, with nothing
+inferred from how long a line happens to be: a blank line starts a new
+paragraph, and a line beginning with `#` is a heading.
+
+Overprints come back as the character they make rather than the strikes
+they were built from, so an apostrophe over a period is an exclamation
+mark and a dead-key accent composes with the letter beneath it. Markdown
+also carries emphasis the plain text cannot: a letter struck twice is
+bold, and one with an underscore overprinted is italic, which is what
+underlining means in typeset text.
+
+Reflowing means the text exports do not preserve layout, so typewriter
+art and concrete poetry should go out as PNG or PDF.
 
 ## Keys
 

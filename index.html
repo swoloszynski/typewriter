@@ -145,13 +145,14 @@
       <button class="modal-close" data-act="text" aria-label="Close">&times;</button>
       <h2>This sheet as text</h2>
       <p class="modal-note">
-        Overprints are read back as the character they make, not as the strikes
-        they were built from: an apostrophe over a period comes back as an
-        exclamation mark, a dead-key accent composes with the letter under it,
-        and an underline leaves its letter alone. Anything else resolves to the
-        topmost impression. The left margin is dropped; indentation is kept.
-        The Markdown version keeps the emphasis plain text cannot carry: a
-        letter struck twice comes back bold, an underlined one italic.
+        Lines the carriage wrapped are joined back into paragraphs. A blank
+        line starts a new paragraph, and a line beginning with
+        <span class="k">#</span> is a heading. Overprints come back as the
+        character they make rather than the strikes they were built from, so
+        an apostrophe over a period is an exclamation mark and a dead-key
+        accent composes with the letter under it. The Markdown version also
+        carries emphasis: a letter struck twice is bold, an underlined one
+        italic.
       </p>
       <pre class="text-out" id="textOut"></pre>
       <div class="modal-actions">
