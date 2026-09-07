@@ -628,9 +628,12 @@
 
   /* Pages are divided by a horizontal rule, which is also what Notion and
      most markdown editors turn "---" into on paste. */
-  function documentText() {
-    return doc.sheets.map((s) => s.toText()).filter(Boolean).join('\n\n---\n\n');
+  function joinPages(render) {
+    return doc.sheets.map(render).filter(Boolean).join('\n\n---\n\n');
   }
+
+  const documentText = () => joinPages((s) => s.toText());
+  const documentMarkdown = () => joinPages((s) => s.toMarkdown());
 
   /* ----------------------------------------------------- persistence */
 
@@ -733,7 +736,9 @@
       { name: 'document.pdf',
         blob: PDFExport.build(doc.sheets.map((s) => s.strikes)) },
       { name: 'document.txt',
-        blob: new Blob([documentText()], { type: 'text/plain;charset=utf-8' }) }
+        blob: new Blob([documentText()], { type: 'text/plain;charset=utf-8' }) },
+      { name: 'document.md',
+        blob: new Blob([documentMarkdown()], { type: 'text/markdown;charset=utf-8' }) }
     ];
 
     for (let i = 0; i < doc.sheets.length; i++) {
@@ -792,12 +797,19 @@
     flashButton($('copyText'), 'COPIED');
   }
 
-  function downloadTextFile() {
-    const text = documentText();
+  function saveAs(text, extension, type, btn) {
     if (!text) return;
-    download(new Blob([text], { type: 'text/plain;charset=utf-8' }),
-             `typed-${doc.sheets.length > 1 ? 'document' : 'page'}-${stamp()}.txt`);
-    flashButton($('downloadText'), 'SAVED');
+    const kind = doc.sheets.length > 1 ? 'document' : 'page';
+    download(new Blob([text], { type }), `typed-${kind}-${stamp()}.${extension}`);
+    flashButton(btn, 'SAVED');
+  }
+
+  function downloadTextFile() {
+    saveAs(documentText(), 'txt', 'text/plain;charset=utf-8', $('downloadText'));
+  }
+
+  function downloadMarkdownFile() {
+    saveAs(documentMarkdown(), 'md', 'text/markdown;charset=utf-8', $('downloadMd'));
   }
 
   /* -------------------------------------------------------- keyboard */
@@ -1044,6 +1056,7 @@
 
   $('copyText').addEventListener('click', copyText);
   $('downloadText').addEventListener('click', downloadTextFile);
+  $('downloadMd').addEventListener('click', downloadMarkdownFile);
 
   textModal.addEventListener('mousedown', (e) => {
     if (e.target === textModal) textModal.hidden = true;

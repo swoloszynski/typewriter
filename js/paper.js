@@ -58,22 +58,37 @@ const OVERPRINTS = [
   { of: ['-', '/'], gives: '+' }
 ];
 
+/* How Markdown spells the two things this machine can emphasise. A
+   typewriter underlines where typeset text would italicise, which is
+   what a single underscore means in Markdown. */
+const MARK = { bold: '**', underline: '_' };
+
 /**
- * Read one cell of the page back as a single character.
+ * Read one cell of the page back as a character, and how it was made.
  *
  * The page holds impressions, not characters, so a cell may have several
  * stacked in it. Taking the topmost is the right fallback but the wrong
  * default: it would turn the machine's own tricks back into the raw
  * strikes they were built from, and hand back a period where the sheet
  * plainly reads "!".
+ *
+ * The style is what separates the Markdown export from the plain text
+ * one. Striking a letter twice thickens it and overprinting an
+ * underscore underlines it; both are emphasis that plain text has no way
+ * to carry.
  */
-function flattenCell(chars) {
-  if (chars.length === 1) return chars[0];
+function readCell(chars) {
+  if (chars.length === 1) {
+    // A lone underscore is either a drawn rule or the underline beneath
+    // a space. Only its neighbours can say which, so it is marked here
+    // and settled once the whole line is known.
+    return { ch: chars[0], style: chars[0] === '_' ? 'rule' : '' };
+  }
 
   const unique = [...new Set(chars)];
 
   // Struck twice to embolden it. Still one letter.
-  if (unique.length === 1) return unique[0];
+  if (unique.length === 1) return { ch: unique[0], style: 'bold' };
 
   // A dead-key accent over the letter beneath it.
   const accents = chars.filter(c => COMBINING[c]);
@@ -81,20 +96,132 @@ function flattenCell(chars) {
     const base = chars.filter(c => !COMBINING[c]).pop();
     if (base) {
       const composed = (base + accents.map(a => COMBINING[a]).join('')).normalize('NFC');
-      if ([...composed].length === 1) return composed;
+      if ([...composed].length === 1) return { ch: composed, style: '' };
     }
   }
 
   for (const o of OVERPRINTS) {
-    if (unique.length === o.of.length && o.of.every(c => unique.includes(c))) return o.gives;
+    if (unique.length === o.of.length && o.of.every(c => unique.includes(c))) {
+      return { ch: o.gives, style: '' };
+    }
   }
 
   // Underlining does not change the letter it sits under.
   const inked = chars.filter(c => c !== '_');
-  if (inked.length && inked.length < chars.length) return inked[inked.length - 1];
+  if (inked.length && inked.length < chars.length) {
+    return { ch: inked[inked.length - 1], style: 'underline' };
+  }
 
   // Anything else: the last impression is the one sitting on top.
-  return chars[chars.length - 1];
+  return { ch: chars[chars.length - 1], style: '' };
+}
+
+/** The character alone, for the plain text export. */
+function flattenCell(chars) {
+  return readCell(chars).ch;
+}
+
+/**
+ * Join lines the carriage wrapped back into paragraphs.
+ *
+ * A return at the end of a typewriter line is usually not a paragraph
+ * break; it is the carriage running out of room. Carried into Markdown
+ * literally, a paragraph arrives as five stub lines, which is what makes
+ * pasted typewriter text look broken.
+ *
+ * A line that ran to about the full measure was almost certainly wrapped,
+ * so the next line continues it. A line that stopped short ended on
+ * purpose -- a heading, a list item, or the last line of a paragraph --
+ * and its break is kept. Blank lines and indents always break, since an
+ * indent is how a typist starts a new paragraph.
+ */
+function reflow(lines) {
+  const width = Math.max(0, ...lines.map((l) => l.raw.length));
+  const ranFull = (l) => l.raw.length >= width - 6;
+
+  // Markdown constructs that own their line. `#` needs its space to be a
+  // heading, so a bare "#word" is body text and reflows like any other.
+  const opensBlock = (s) => /^\s*(#{1,6}\s|[-*+]\s|\d+[.)]\s|>)/.test(s);
+
+  const out = [];
+  for (const line of lines) {
+    const prev = out[out.length - 1];
+    const joins = prev
+      && prev.raw.trim() && line.raw.trim()
+      && ranFull(prev)
+      && !opensBlock(prev.raw)
+      && !opensBlock(line.raw)
+      && !/^\s{2,}/.test(line.raw);          // an indent starts a paragraph
+
+    if (joins) {
+      prev.text = prev.text.replace(/\s+$/, '') + ' ' + line.text.replace(/^\s+/, '');
+      prev.raw = prev.raw + ' ' + line.raw.trimStart();
+    } else {
+      out.push({ ...line });
+    }
+  }
+
+  // Two lines that were deliberately not joined are separate blocks, but
+  // Markdown only sees that if a blank line divides them: a single
+  // newline is a soft wrap, so a heading and the paragraph beneath it
+  // would otherwise render as one run-on paragraph.
+  const spaced = [];
+  for (const line of out) {
+    const prev = spaced[spaced.length - 1];
+    if (prev && prev.trim() && line.text.trim()) spaced.push('');
+    spaced.push(line.text);
+  }
+  return spaced;
+}
+
+/**
+ * Turn one row of cells into Markdown.
+ *
+ * The awkward part is that emphasis on a typewriter covers the spaces
+ * between words as well as the words. Underlining a phrase means hitting
+ * the underscore under the spaces too, which arrives here as a lone
+ * underscore; emboldening a phrase means striking the spaces twice,
+ * which leaves no impression at all. Both would otherwise cut a run in
+ * half and produce "**two** **words**", so a gap sitting between two
+ * cells of the same emphasis is absorbed into it.
+ */
+function emphasise(row) {
+  const isConnector = (c) => c.gap || c.style === 'rule';
+
+  for (let i = 0; i < row.length; i++) {
+    if (!isConnector(row[i])) continue;
+
+    let l = i - 1;
+    while (l >= 0 && isConnector(row[l])) l--;
+    let r = i + 1;
+    while (r < row.length && isConnector(row[r])) r++;
+
+    const left = l >= 0 ? row[l].style : '';
+    const right = r < row.length ? row[r].style : '';
+
+    if (left && left === right && MARK[left]) {
+      row[i] = { ch: ' ', style: left };
+    } else if (row[i].style === 'rule') {
+      row[i] = { ch: '_', style: '' };   // a drawn rule after all
+    }
+  }
+
+  const runs = [];
+  for (const cell of row) {
+    const last = runs[runs.length - 1];
+    if (last && last.style === cell.style) last.text += cell.ch;
+    else runs.push({ style: cell.style, text: cell.ch });
+  }
+
+  // Markdown will not open emphasis against a space, so any padding at
+  // the ends of a run has to sit outside the markers.
+  return runs.map((run) => {
+    if (!MARK[run.style] || !run.text.trim()) return run.text;
+    const lead = run.text.match(/^\s*/)[0];
+    const tail = run.text.match(/\s*$/)[0];
+    const core = run.text.slice(lead.length, run.text.length - tail.length);
+    return lead + MARK[run.style] + core + MARK[run.style] + tail;
+  }).join('');
 }
 
 class Sheet {
@@ -216,16 +343,14 @@ class Sheet {
   }
 
   /**
-   * The sheet as plain text.
+   * The occupied part of the page, as cells of stacked strikes.
    *
-   * Columns are shifted so the left margin becomes column zero -- the
-   * one-inch margin is a property of the paper, not of the writing, and
-   * ten leading spaces on every line is not what anyone wants to paste
-   * into a document. Relative indentation is kept.
+   * Columns are reported from the leftmost mark rather than from the
+   * edge of the sheet: the one-inch margin is a property of the paper,
+   * not of the writing, and ten leading spaces on every line is not what
+   * anyone wants to paste into a document.
    */
-  toText() {
-    if (!this.strikes.length) return '';
-
+  _grid() {
     const cells = new Map();
     let minCol = Infinity, maxCol = -Infinity;
     let minLine = Infinity, maxLine = -Infinity;
@@ -241,16 +366,49 @@ class Sheet {
       if (s.line > maxLine) maxLine = s.line;
     }
 
+    return { cells, minCol, maxCol, minLine, maxLine };
+  }
+
+  /**
+   * Walk the grid a row at a time, handing each row to `render`.
+   *
+   * Each line also carries its raw width. Whether a line was wrapped by
+   * the carriage or ended deliberately has to be judged on the typed
+   * characters, before Markdown markers inflate the length.
+   */
+  _rows(render) {
+    if (!this.strikes.length) return [];
+    const g = this._grid();
     const lines = [];
-    for (let line = minLine; line <= maxLine; line++) {
-      let out = '';
-      for (let col = minCol; col <= maxCol; col++) {
-        const chars = cells.get(line + ',' + col);
-        out += chars ? flattenCell(chars) : ' ';
+
+    for (let line = g.minLine; line <= g.maxLine; line++) {
+      const row = [];
+      for (let col = g.minCol; col <= g.maxCol; col++) {
+        const chars = g.cells.get(line + ',' + col);
+        row.push(chars ? readCell(chars) : { ch: ' ', style: '', gap: true });
       }
-      lines.push(out.replace(/\s+$/, ''));
+      const raw = row.map((c) => c.ch).join('').replace(/\s+$/, '');
+      lines.push({ raw, text: render(row).replace(/\s+$/, '') });
     }
-    return lines.join('\n');
+    return lines;
+  }
+
+  /** The sheet as plain text, line for line as it sits on the page. */
+  toText() {
+    return this._rows((row) => row.map((c) => c.ch).join(''))
+               .map((l) => l.text).join('\n');
+  }
+
+  /**
+   * The sheet as Markdown.
+   *
+   * The difference from the plain text is emphasis. A letter struck
+   * twice and a letter with an underscore overprinted are both emphasis
+   * the machine can express and plain text cannot, so they come back as
+   * bold and italic rather than being flattened away.
+   */
+  toMarkdown() {
+    return reflow(this._rows(emphasise)).join('\n');
   }
 
   /** Flatten the sheet to a canvas so it can be saved as a PNG. */
